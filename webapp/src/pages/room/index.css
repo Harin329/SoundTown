@@ -9,15 +9,37 @@
 
 .App-header {
   height: 10vh;
-  align-items: center;
-  background-color: blue;
+  background-color: #0A3E03;
   padding-left: 1%;
   padding-right: 1%;
+  padding-top: 1%;
+}
+
+.App-header-left {
+  height: 100%;
+  display: flex;
+  flex: 1;
+  align-items: center;
+}
+
+.App-header-right {
+  height: 100%;
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: flex-end;
+  background-color: #0A3E03;
 }
 
 .image-button {
   height: 50px;
   width: 50px;
+}
+
+.icon-button {
+  height: 30px;
+  width: 30px;
+  margin-right: 5px;
 }
 
 .image-button:hover {
@@ -33,6 +55,27 @@
   margin-right: 10px;
 }
 
+.now-playing-image {
+  height: 250px;
+  width: 250px;
+  border-radius: 20px;
+  object-fit: cover;
+}
+
+.profile-image {
+  height: 50px;
+  width: 50px;
+  border-radius: 50px;
+  object-fit: cover;
+  margin-right: 10px;
+}
+
+.song-message {
+  display: flex;
+  text-align: start;
+  margin-top: 10px;
+}
+
 .App-content {
   height: 75vh;
   justify-content: center;
@@ -43,10 +86,17 @@
 
 .App-now-playing {
   height: 50vh;
-  align-items: center;
-  justify-content: center;
+  border-radius: 20px;
+  padding: 20px;
   font-size: calc(10px + 2vmin);
   background-color: #025034;
+  color: white;
+}
+
+.App-request {
+  border-radius: 20px;
+  padding: 20px;
+  font-size: calc(10px + 2vmin);
   color: white;
 }
 

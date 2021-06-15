@@ -8,6 +8,7 @@ import "./index.css";
 import App from "./App";
 import reportWebVitals from "./reportWebVitals";
 import { client } from "./apollo/apollo";
+import './fonts/Gotham-Book.otf';
 
 ReactDOM.render(
   <React.StrictMode>

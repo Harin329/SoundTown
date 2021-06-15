@@ -1,6 +1,15 @@
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+  font-family: 'Gotham-Book', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+span {
+  margin: 0;
+  font-family: 'Gotham-Book', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -10,4 +19,19 @@ body {
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
+}
+
+@font-face {
+  font-family: "Gotham-Book";
+  src: local('Gotham'), url(./fonts/Gotham-Book.otf) format('opentype');
+}
+
+@font-face {
+  font-family: "Gotham-Medium";
+  src: local('Gotham'), url(./fonts/Gotham-Medium.otf) format('opentype');
+}
+
+@font-face {
+  font-family: "Gotham-Light";
+  src: local('Gotham'), url(./fonts/Gotham-Light.otf) format('opentype');
 }
