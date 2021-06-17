@@ -18,6 +18,7 @@ export default function Room() {
   const [message, setMessage] = useState("");
   const [listeners, setListeners] = useState([]);
   const [queue, setQueue] = useState([]);
+  const [searchResult, setSearchResult] = useState([1, 2, 3, 4, 5, 6, 7]);
 
   document.body.style.overflow = "hidden";
 
@@ -161,34 +162,118 @@ export default function Room() {
               ></Col>
             </Row>
           </Col>
-          <Row>
-            <Title level={3} style={{ color: "white" }}>
-              Tuned In
-            </Title>
+          <Row
+            style={{
+              flex: 1,
+              paddingBottom: 10,
+              padding: 20,
+              flexDirection: "column",
+            }}
+          >
+            <Row>
+              <Title level={5} style={{ color: "white" }}>
+                Tuned In
+              </Title>
+            </Row>
+            <div style={{flexDirection: 'row', flex: 1, display: 'flex', justifyContent: 'space-evenly'}}>
+            <Row style={{ alignItems: "center" }}>
+              <img src={roomImage} className="profile-image" alt={roomName} />
+              <Title
+                level={5}
+                style={{
+                  color: "white",
+                  marginTop: 10,
+                }}
+              >
+                Harin Wu
+              </Title>
+            </Row>
+            <Row style={{ alignItems: "center" }}>
+              <img src={roomImage} className="profile-image" alt={roomName} />
+              <Title
+                level={5}
+                style={{
+                  color: "white",
+                  marginTop: 10,
+                }}
+              >
+                23 Other Listeners
+              </Title>
+            </Row>
+            </div>
           </Row>
         </Col>
         <Col className="App-request" span={12}>
-          <Row style={{ flex: 1, paddingBottom: 10 }}>
+          <Row style={{ flex: 1, paddingBottom: 10, marginLeft: 30 }}>
             <Title level={5} style={{ color: "white" }}>
               Request a Song
             </Title>
-            <Input placeholder="Search" onChange={searchSong} />
-            <Card style={{ width: 100, marginTop: 16 }} loading={loading}>
-              <Meta
-                avatar={
-                  <Avatar src="https://zos.alipayobjects.com/rmsportal/ODTLcjxAfvqbxHnVXCYX.png" />
-                }
-                title="Card title"
-                description="This is the description"
-              />
-            </Card>
+            <Input
+              placeholder="Search"
+              onChange={searchSong}
+              style={{ marginBottom: 20, width: "95%" }}
+            />
+            {searchResult.map((res) => {
+              return (
+                <div
+                  style={{
+                    width: "25%",
+                    height: 250,
+                    alignItems: "start",
+                    display: "flex",
+                    flexDirection: "column",
+                  }}
+                >
+                  <img
+                    style={{
+                      width: 150,
+                      height: 150,
+                      objectFit: "cover",
+                      borderRadius: 20,
+                    }}
+                    alt="example"
+                    src="https://os.alipayobjects.com/rmsportal/QBnOOoLaAfKPirc.png"
+                  />
+                  <span style={{ fontSize: 18, textAlign: "start" }}>Song</span>
+                  <span style={{ fontSize: 14, textAlign: "start" }}>
+                    Artist
+                  </span>
+                </div>
+              );
+            })}
           </Row>
         </Col>
       </Row>
       <Row className="App-footer">
-        <Title level={3} style={{ color: "white" }}>
+        <Title level={5} style={{ color: "white" }}>
           Next Up
         </Title>
+        <div style={{flexDirection: 'row', flex: 1, display: 'flex', justifyContent: 'space-between'}}>
+            <Row style={{ alignItems: "center" }}>
+              <img src={roomImage} className="profile-image" alt={roomName} />
+              <Title
+                level={5}
+                style={{
+                  color: "white",
+                  marginTop: 10,
+                }}
+              >
+                Deja Vu
+              </Title>
+            </Row>
+            <Row style={{ alignItems: "center" }}>
+              <img src={roomImage} className="profile-image" alt={roomName} />
+              <Title
+                level={5}
+                style={{
+                  color: "white",
+                  marginTop: 10,
+                }}
+              >
+                Deja Vu
+              </Title>
+            </Row>
+            </div>
       </Row>
     </Col>
   );
