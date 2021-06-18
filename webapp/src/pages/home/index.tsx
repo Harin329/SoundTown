@@ -36,6 +36,10 @@ export default function Home() {
     history.push('/createRoom');
   };
 
+  const joinRoom = () => {
+    history.push('/room/harin');
+  };
+
   return (
     <Row className="App">
       <div style={{ flexDirection: "row" }}>
@@ -51,6 +55,9 @@ export default function Home() {
         </Button>}
         {isLoggedIn && <Button type="primary" shape="round" size="large" onClick={createRoom}>
           Create a Room
+        </Button>}
+        {isLoggedIn && <Button type="primary" shape="round" size="large" onClick={joinRoom}>
+          Join a Room
         </Button>}
       </div>
     </Row>

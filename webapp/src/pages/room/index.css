@@ -70,10 +70,30 @@
   margin-right: 10px;
 }
 
+.selected-image {
+  height: 80px;
+  width: 80px;
+  border-radius: 20px;
+  object-fit: cover;
+  margin-right: 10px;
+}
+
 .song-message {
   display: flex;
   text-align: start;
   margin-top: 10px;
+}
+
+.resultBlock:hover {
+  opacity: 0.5;
+}
+
+.resultName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 
 .App-content {
