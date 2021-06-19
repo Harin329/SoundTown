@@ -21,3 +21,23 @@ export const CREATE_ROOM = gql`
     }
   }
 `;
+
+export const GET_ROOM = gql`
+query {
+  room {
+    _id
+    admin
+    creator
+    image_uri
+    listeners
+    name
+    now_playing {
+      _id
+      creator
+      message
+      song
+      timestamp
+    }
+  }
+}
+`;

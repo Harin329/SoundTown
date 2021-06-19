@@ -27,6 +27,9 @@
 }
 
 .input {
-  width: 50vh;
+  width: 80vh;
+  height: 10vh;
+  border-radius: 20px;
   border-color: white;
+  font-size: large;
 }
