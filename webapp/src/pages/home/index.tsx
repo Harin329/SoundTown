@@ -1,11 +1,19 @@
-import React, { useEffect } from "react";
-import { useSelector, useDispatch } from 'react-redux';
-import { Typography, Row, Button } from "antd";
+import { useEffect } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { Typography, Row, Button, Image, Space } from "antd";
 import { useHistory } from "react-router-dom";
 import "./index.css";
 import { getHashParams, removeHashParams } from "../../utils/hashUtils";
-import { selectIsLoggedIn, selectTokenExpiryDate, setAccessToken, setLoggedIn, setTokenExpiryDate } from "../../reducer/authReducer";
+import {
+  selectIsLoggedIn,
+  setAccessToken,
+  setLoggedIn,
+  setTokenExpiryDate,
+} from "../../reducer/authReducer";
 import { getAuthorizeHref } from "../../oauthConfig";
+import logo from "../../images/logo.png";
+import create from "../../images/create.png";
+import join from "../../images/join.png";
 
 const hashParams = getHashParams();
 const access_token = hashParams.access_token;
@@ -13,9 +21,8 @@ const expires_in = hashParams.expires_in;
 removeHashParams();
 
 export default function Home() {
-  const { Title } = Typography;
+  const { Title, Text } = Typography;
   const isLoggedIn = useSelector(selectIsLoggedIn);
-  const tokenExpiryDate = useSelector(selectTokenExpiryDate);
   const dispatch = useDispatch();
   const history = useHistory();
 
@@ -24,42 +31,64 @@ export default function Home() {
       dispatch(setLoggedIn(true));
       dispatch(setAccessToken(access_token));
       dispatch(setTokenExpiryDate(Number(expires_in)));
-      // dispatch(setUserProfileAsync(access_token));
     }
-  })
+  });
 
   const authorizeSpotify = () => {
-    window.open(getAuthorizeHref(), '_self')
+    window.open(getAuthorizeHref(), "_self");
   };
 
   const createRoom = () => {
-    history.push('/createRoom');
+    history.push("/createRoom");
   };
 
   const joinRoom = () => {
-    history.push('/room/harin');
+    history.push("/room/harin");
   };
 
   return (
-    <Row className="App">
-      <div style={{ flexDirection: "row" }}>
-        <Title style={{ color: "white" }}>Welcome to SoundTown!</Title>
-        {!isLoggedIn &&
-        <Button
-          type="primary"
-          shape="round"
-          size="large"
-          onClick={authorizeSpotify}
-        >
-          Authorize with Spotify
-        </Button>}
-        {isLoggedIn && <Button type="primary" shape="round" size="large" onClick={createRoom}>
-          Create a Room
-        </Button>}
-        {isLoggedIn && <Button type="primary" shape="round" size="large" onClick={joinRoom}>
-          Join a Room
-        </Button>}
-      </div>
-    </Row>
+    <Space className="App" size={"large"}>
+      <Image src={logo} width={200} preview={false} />
+      <Title style={{ color: "white" }}>Welcome to SoundTown!</Title>
+      <Text style={{ color: "white", fontSize: 18 }}>
+        Create and join music party rooms to listen to music with friends and
+        discover new songs!
+      </Text>
+      <Row>
+        {!isLoggedIn && (
+          <Button
+            type="primary"
+            shape="round"
+            size="large"
+            className="button"
+            onClick={authorizeSpotify}
+          >
+            Authorize with Spotify
+          </Button>
+        )}
+        {isLoggedIn && (
+          <Space size={"middle"}>
+            <Button
+              className="button action-button"
+              type="primary"
+              shape="round"
+              icon={<Image src={create} width={40} preview={false}/>}
+              onClick={createRoom}
+            >
+              Create a Room
+            </Button>
+            <Button
+              className="button action-button"
+              type="primary"
+              shape="round"
+              icon={<Image src={join} width={50} preview={false}/>}
+              onClick={joinRoom}
+            >
+              Join a Room
+            </Button>
+          </Space>
+        )}
+      </Row>
+    </Space>
   );
 }

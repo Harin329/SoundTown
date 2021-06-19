@@ -1,6 +1,7 @@
 @import '~antd/dist/antd.css';
 
 .App {
+  display: flex;
   text-align: center;
   align-items: center;
   justify-content: center;
@@ -9,31 +10,23 @@
   width: 100vw;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+.button {
+  background-color: #1DB954;
+  border-color: white;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
+.button:hover {
+  background-color: #025034;
+  border-color: white;
 }
 
-.App-sider {
-  background-color: aqua;
-  height: inherit;
+.create-button {
+  width: 40vh;
+  height: 7vh;
+  font-size: large;
 }
 
-.App-link {
-  color: #61dafb;
-}
-
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.input {
+  width: 50vh;
+  border-color: white;
 }
