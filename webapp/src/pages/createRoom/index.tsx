@@ -1,9 +1,10 @@
 import React, { useState } from "react";
-import { Button, Input, Space } from "antd";
+import { Button, Input, message, Space } from "antd";
 import "./index.css";
 import { useHistory } from "react-router-dom";
 import { useMutation } from "@apollo/client";
-import gql from "graphql-tag";
+import { CREATE_ROOM } from "../../query/room";
+import { setRoomID } from "../../reducer/roomReducer";
 
 export default function CreateRoom() {
   const history = useHistory();
@@ -13,31 +14,26 @@ export default function CreateRoom() {
     setRoomName(e.target.value);
   };
 
-  const [createRoom] = useMutation(gql`
-    mutation CreateRoom($name: String!, $creator: String!, $admin: String, $image_uri: String, $listeners: [String]) {
-      insertOneRoom(data: { name: $name, creator: $creator, admin: $admin, image_uri: $image_uri, listeners: $listeners }) {
-        name
-        creator
-        admin
-        image_uri
-        listeners
-      }
-    }
-  `);
+  const [createRoom] = useMutation(CREATE_ROOM);
 
   function startRoom() {
     // Create Room in Mongo
     createRoom({
       variables: {
-        name: "test",
-        creator: "Some New Title",
-        admin: "harin",
+        name: roomName,
+        creator: "",
+        admin: "",
         image_uri: "",
         listeners: [],
       },
-    })
-    // Get Created Room ID
-    // history.push("/room/" + roomName);
+    }).then((res) => {
+      // Get Created Room ID
+      const roomID = res.data.insertOneRoom._id
+      setRoomID(roomID);
+      history.push("/room/" + roomID);
+    }).catch((err) => {
+      message.error(err);
+    });
   }
 
   return (

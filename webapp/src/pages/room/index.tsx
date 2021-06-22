@@ -1,18 +1,18 @@
-import React, { useEffect, useState } from "react";
-import { useSelector, useDispatch } from "react-redux";
-import { Typography, Row, Col, Input, Card, Button } from "antd";
+import React, { useEffect, useState, useMemo } from "react";
+import { useSelector } from "react-redux";
+import { Typography, Row, Col, Input, Button, Space, Image } from "antd";
 import "./index.css";
 import { useHistory } from "react-router-dom";
 import back from "../../images/back.png";
 import setting from "../../images/setting.png";
 import share from "../../images/share.png";
-import { gql, useQuery } from "@apollo/client";
+import { useQuery } from "@apollo/client";
 import SpotifyWebApi from "spotify-web-api-js";
 import { selectAccessToken } from "../../reducer/authReducer";
+import { GET_ROOM } from "../../query/room";
 
 export default function Room() {
   const { Title, Text } = Typography;
-  const { Meta } = Card;
   const { TextArea } = Input;
   const history = useHistory();
   const [roomName, setRoomName] = useState("");
@@ -20,45 +20,34 @@ export default function Room() {
   const [nowPlaying, setNowPlaying] = useState("");
   const [message, setMessage] = useState("");
   const [listeners, setListeners] = useState([]);
-  const [queue, setQueue] = useState([1, 2, 3]);
+  const [queue, setQueue] = useState([1, 2, 3, 4, 5]);
   const [searchResult, setSearchResult] = useState<
     SpotifyApi.TrackObjectFull[] | undefined
   >([]);
   const [queuedSong, setQueuedSong] = useState<SpotifyApi.TrackObjectFull>();
   const [query, setQuery] = useState("");
   const [queueMessage, setQueueMessage] = useState("");
-  const spotifyClient = new SpotifyWebApi();
   const token = useSelector(selectAccessToken);
-  spotifyClient.setAccessToken(token);
+  const spotifyClient = useMemo(() => {
+    const client = new SpotifyWebApi();
+    client.setAccessToken(token);
+    return client;
+  }, [token]);
 
   document.body.style.overflow = "hidden";
 
-  const { loading, error, data } = useQuery(gql`
-    query {
-      room {
-        _id
-        admin
-        creator
-        image_uri
-        listeners
-        name
-        now_playing {
-          _id
-          creator
-          message
-          song
-          timestamp
-        }
-      }
-    }
-  `);
+  const { loading, error, data } = useQuery(GET_ROOM, {
+    variables: { id: "60d1425eef0ddcf8bcc65e15" }
+  });
 
   useEffect(() => {
     if (!loading) {
-      console.log(error);
       console.log(data);
       setRoomName(data.room.name);
       setRoomImage(data.room.image_uri);
+    }
+    if (error) {
+      console.log(error);
     }
   }, [data, error, loading]);
 
@@ -86,53 +75,60 @@ export default function Room() {
   }, [query, spotifyClient]);
 
   const queueSong = () => {
-    console.log('queue song');
-  }
+    console.log("queue song");
+  };
 
   return (
-    <Col className="App">
+    <Space className="App-room" size={"small"}>
       <Row className="App-header">
         <Col className="App-header-left">
-          <img
+          <Image
             className="image-button"
             src={back}
             alt="back"
+            preview={false}
             onClick={() => {
               history.push("/");
             }}
           />
-          <img src={roomImage} className="room-image" alt={roomName} />
-          <span
+          <Image
+            src={roomImage}
+            className="room-image"
+            alt={roomName}
+            preview={false}
+          />
+          <Text
             style={{
               color: "white",
               fontSize: 30,
               fontFamily: "Gotham-Medium",
-              marginTop: 5,
             }}
           >
             {roomName}
-          </span>
+          </Text>
         </Col>
         <Col className="App-header-right">
-          <img
+          <Image
             className="image-button icon-button"
             src={setting}
             alt="setting"
+            preview={false}
             onClick={() => {
               history.push("/");
             }}
           />
-          <img
+          <Image
             className="image-button icon-button"
             src={share}
             alt="share"
+            preview={false}
             onClick={() => {
               history.push("/");
             }}
           />
         </Col>
       </Row>
-      <Row className="App-content" style={{ padding: "1%" }}>
+      <Row className="App-content">
         <Col span={12}>
           <Col className="App-now-playing">
             <Row style={{ flex: 1, paddingBottom: 10 }}>
@@ -141,17 +137,19 @@ export default function Room() {
               </Title>
             </Row>
             <Row style={{ flex: 4 }}>
-              <img
+              <Image
                 src={roomImage}
                 className="now-playing-image"
                 alt={roomName}
+                preview={false}
               />
               <Col style={{ flex: 1.5, paddingLeft: 50 }}>
                 <Row style={{ alignItems: "center" }}>
-                  <img
+                  <Image
                     src={roomImage}
                     className="profile-image"
                     alt={roomName}
+                    preview={false}
                   />
                   <Title
                     level={5}
@@ -209,16 +207,18 @@ export default function Room() {
                 Tuned In
               </Title>
             </Row>
-            <div
+            <Row
               style={{
-                flexDirection: "row",
-                flex: 1,
-                display: "flex",
                 justifyContent: "space-evenly",
               }}
             >
               <Row style={{ alignItems: "center" }}>
-                <img src={roomImage} className="profile-image" alt={roomName} />
+                <Image
+                  src={roomImage}
+                  className="tunedin-image"
+                  alt={roomName}
+                  preview={false}
+                />
                 <Title
                   level={5}
                   style={{
@@ -230,7 +230,12 @@ export default function Room() {
                 </Title>
               </Row>
               <Row style={{ alignItems: "center" }}>
-                <img src={roomImage} className="profile-image" alt={roomName} />
+                <Image
+                  src={roomImage}
+                  className="tunedin-image"
+                  alt={roomName}
+                  preview={false}
+                />
                 <Title
                   level={5}
                   style={{
@@ -241,7 +246,7 @@ export default function Room() {
                   23 Other Listeners
                 </Title>
               </Row>
-            </div>
+            </Row>
           </Row>
         </Col>
         <Col className="App-request" span={12}>
@@ -259,7 +264,7 @@ export default function Room() {
               />
               {searchResult?.slice(0, 7).map((res) => {
                 return (
-                  <div
+                  <Col
                     className="resultBlock"
                     style={{
                       width: "25%",
@@ -272,7 +277,7 @@ export default function Room() {
                       setQueuedSong(res);
                     }}
                   >
-                    <img
+                    <Image
                       style={{
                         width: 150,
                         height: 150,
@@ -281,22 +286,33 @@ export default function Room() {
                       }}
                       alt="example"
                       src={res.album.images[0].url}
+                      preview={false}
                     />
-                    <span
+                    <Text
                       className="resultName"
-                      style={{ fontSize: 18, textAlign: "start", width: 150 }}
+                      style={{
+                        color: "white",
+                        fontSize: 18,
+                        textAlign: "start",
+                        width: 150,
+                      }}
                     >
                       {res.name}
-                    </span>
-                    <span
-                      style={{ fontSize: 14, textAlign: "start", width: 150 }}
+                    </Text>
+                    <Text
+                      style={{
+                        color: "white",
+                        fontSize: 14,
+                        textAlign: "start",
+                        width: 150,
+                      }}
                     >
                       {res.artists[0].name}
-                    </span>
-                  </div>
+                    </Text>
+                  </Col>
                 );
               })}
-              <div
+              <Col
                 style={{
                   width: "25%",
                   height: 250,
@@ -305,7 +321,7 @@ export default function Room() {
                   flexDirection: "column",
                 }}
               >
-                <div
+                <Col
                   style={{
                     fontSize: 18,
                     textAlign: "start",
@@ -318,27 +334,30 @@ export default function Room() {
                     alignItems: "center",
                   }}
                 >
-                  <span style={{ fontSize: 18, textAlign: "start" }}>
+                  <Text
+                    style={{ color: "white", fontSize: 18, textAlign: "start" }}
+                  >
                     See More
-                  </span>
-                </div>
-              </div>
+                  </Text>
+                </Col>
+              </Col>
             </Row>
           )}
           {queuedSong && (
-            <div style={{ flex: 1, paddingBottom: 10, marginLeft: 30 }}>
+            <Col style={{ flex: 1, paddingBottom: 10, marginLeft: 30 }}>
               <Row>
                 <Title level={5} style={{ color: "white" }}>
                   Include a Message
                 </Title>
               </Row>
               <Row align="middle">
-              <Col span={3}>
-                <img
-                  src={queuedSong.album.images[0].url}
-                  className="selected-image"
-                  alt={roomName}
-                />
+                <Col span={3}>
+                  <Image
+                    src={queuedSong.album.images[0].url}
+                    className="selected-image"
+                    alt={roomName}
+                    preview={false}
+                  />
                 </Col>
                 <Col span={19}>
                   <Row>
@@ -364,12 +383,15 @@ export default function Room() {
                   </Row>
                 </Col>
                 <Col span={2}>
-                <img
-                  src={roomImage}
-                  style={{width: 30, height: 30}}
-                  alt={roomName}
-                  onClick={() => {setQueuedSong(undefined)}}
-                />
+                  <Image
+                    src={roomImage}
+                    style={{ width: 30, height: 30 }}
+                    alt={roomName}
+                    preview={false}
+                    onClick={() => {
+                      setQueuedSong(undefined);
+                    }}
+                  />
                 </Col>
               </Row>
               <TextArea
@@ -381,10 +403,15 @@ export default function Room() {
                 }}
                 style={{ marginTop: 20, width: "100%" }}
               />
-              <Button type="primary" shape="round" size="large" onClick={queueSong}>
-          Queue Song
-        </Button>
-            </div>
+              <Button
+                type="primary"
+                shape="round"
+                size="large"
+                onClick={queueSong}
+              >
+                Queue Song
+              </Button>
+            </Col>
           )}
         </Col>
       </Row>
@@ -392,18 +419,23 @@ export default function Room() {
         <Title level={5} style={{ color: "white" }}>
           Next Up
         </Title>
-        <div
+        <Col
           style={{
             flexDirection: "row",
             flex: 1,
             display: "flex",
-            justifyContent: "space-between",
+            justifyContent: "space-evenly",
           }}
         >
           {queue.map((res) => {
             return (
-              <Row style={{ alignItems: "center" }}>
-                <img src={roomImage} className="profile-image" alt={roomName} />
+              <Row align="middle">
+                <Image
+                  src={roomImage}
+                  className="nextsong-image"
+                  alt={roomName}
+                  preview={false}
+                />
                 <Title
                   level={5}
                   style={{
@@ -416,8 +448,8 @@ export default function Room() {
               </Row>
             );
           })}
-        </div>
+        </Col>
       </Row>
-    </Col>
+    </Space>
   );
 }

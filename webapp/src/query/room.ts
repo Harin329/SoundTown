@@ -1,43 +1,50 @@
 import gql from "graphql-tag";
 
-export const FIND_ROOM = gql`
-  query FindRoom($query: RoomQueryInput!) {
-    room(query: $query) {
-      _id
-      creator
-    }
-  }
-`;
-
 export const CREATE_ROOM = gql`
-  mutation CreateRoom() {
-    insert_room(input: {
-      _id: "party",
-      creator: "harin",
-    }) {
-      returning {
-        id
+  mutation CreateRoom(
+    $name: String!
+    $creator: String!
+    $admin: String
+    $image_uri: String
+    $listeners: [String]
+  ) {
+    insertOneRoom(
+      data: {
+        name: $name
+        creator: $creator
+        admin: $admin
+        image_uri: $image_uri
+        listeners: $listeners
       }
+    ) {
+      _id
+      name
+      creator
+      admin
+      image_uri
+      listeners
     }
   }
 `;
 
 export const GET_ROOM = gql`
-query {
-  room {
-    _id
-    admin
-    creator
-    image_uri
-    listeners
-    name
-    now_playing {
+  query GetRoom(
+    $id: ObjectId!
+    ) {
+    room (query: { _id: $id } ) {
       _id
+      admin
       creator
-      message
-      song
-      timestamp
+      image_uri
+      listeners
+      name
+      now_playing {
+        _id
+        creator
+        message
+        song
+        timestamp
+      }
     }
   }
-}
 `;
