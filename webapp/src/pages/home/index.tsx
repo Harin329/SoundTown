@@ -14,6 +14,9 @@ import { getAuthorizeHref } from "../../oauthConfig";
 import logo from "../../images/logo.png";
 import create from "../../images/create.png";
 import join from "../../images/join.png";
+import { useQuery } from "@apollo/client";
+import { setRoomID } from "../../reducer/roomReducer";
+import { GET_ANY_ROOM } from "../../query/room";
 
 const hashParams = getHashParams();
 const access_token = hashParams.access_token;
@@ -25,6 +28,8 @@ export default function Home() {
   const isLoggedIn = useSelector(selectIsLoggedIn);
   const dispatch = useDispatch();
   const history = useHistory();
+
+  const { loading, data } = useQuery(GET_ANY_ROOM);
 
   useEffect(() => {
     if (access_token) {
@@ -43,7 +48,11 @@ export default function Home() {
   };
 
   const joinRoom = () => {
-    history.push("/room/harin");
+    if (!loading) {
+      const roomID = data.rooms[0]._id;
+      dispatch(setRoomID(roomID));
+      history.push("/room/" + roomID);
+    }
   };
 
   return (
@@ -72,7 +81,7 @@ export default function Home() {
               className="button action-button"
               type="primary"
               shape="round"
-              icon={<Image src={create} width={40} preview={false}/>}
+              icon={<Image src={create} width={40} preview={false} />}
               onClick={createRoom}
             >
               Create a Room
@@ -81,7 +90,7 @@ export default function Home() {
               className="button action-button"
               type="primary"
               shape="round"
-              icon={<Image src={join} width={50} preview={false}/>}
+              icon={<Image src={join} width={50} preview={false} />}
               onClick={joinRoom}
             >
               Join a Room

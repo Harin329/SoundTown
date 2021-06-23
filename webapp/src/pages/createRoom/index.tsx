@@ -5,9 +5,11 @@ import { useHistory } from "react-router-dom";
 import { useMutation } from "@apollo/client";
 import { CREATE_ROOM } from "../../query/room";
 import { setRoomID } from "../../reducer/roomReducer";
+import { useDispatch } from "react-redux";
 
 export default function CreateRoom() {
   const history = useHistory();
+  const dispatch = useDispatch();
   const [roomName, setRoomName] = useState("");
 
   const editName = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -29,7 +31,7 @@ export default function CreateRoom() {
     }).then((res) => {
       // Get Created Room ID
       const roomID = res.data.insertOneRoom._id
-      setRoomID(roomID);
+      dispatch(setRoomID(roomID));
       history.push("/room/" + roomID);
     }).catch((err) => {
       message.error(err);

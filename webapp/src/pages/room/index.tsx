@@ -1,24 +1,29 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { useSelector } from "react-redux";
-import { Typography, Row, Col, Input, Button, Space, Image } from "antd";
+import { Typography, Row, Col, Input, Button, Space, Image, message } from "antd";
 import "./index.css";
 import { useHistory } from "react-router-dom";
 import back from "../../images/back.png";
 import setting from "../../images/setting.png";
 import share from "../../images/share.png";
-import { useQuery } from "@apollo/client";
+import logo from "../../images/logo.png";
+import close from "../../images/close.png";
+import { useMutation, useQuery } from "@apollo/client";
 import SpotifyWebApi from "spotify-web-api-js";
 import { selectAccessToken } from "../../reducer/authReducer";
 import { GET_ROOM } from "../../query/room";
+import { selectRoomID } from "../../reducer/roomReducer";
+import { CREATE_REQUEST } from "../../query/request";
 
 export default function Room() {
   const { Title, Text } = Typography;
   const { TextArea } = Input;
   const history = useHistory();
+  const [roomObj, setRoomObj] = useState();
   const [roomName, setRoomName] = useState("");
   const [roomImage, setRoomImage] = useState("");
   const [nowPlaying, setNowPlaying] = useState("");
-  const [message, setMessage] = useState("");
+  const [songMessage, setMessage] = useState("");
   const [listeners, setListeners] = useState([]);
   const [queue, setQueue] = useState([1, 2, 3, 4, 5]);
   const [searchResult, setSearchResult] = useState<
@@ -36,13 +41,18 @@ export default function Room() {
 
   document.body.style.overflow = "hidden";
 
+  const roomID = useSelector(selectRoomID);
+
+  console.log(roomID);
+
   const { loading, error, data } = useQuery(GET_ROOM, {
-    variables: { id: "60d1425eef0ddcf8bcc65e15" }
+    variables: { id: roomID },
   });
 
   useEffect(() => {
     if (!loading) {
       console.log(data);
+      setRoomObj(data.room._id);
       setRoomName(data.room.name);
       setRoomImage(data.room.image_uri);
     }
@@ -74,8 +84,31 @@ export default function Room() {
     return () => clearTimeout(timeout_id);
   }, [query, spotifyClient]);
 
+  const [createRequest] = useMutation(CREATE_REQUEST);
+
   const queueSong = () => {
-    console.log("queue song");
+    // Create Request in Mongo
+    createRequest({
+      variables: {
+        song: queuedSong?.uri,
+        creator: "harin",
+        creator_name: "harin",
+        creator_uri: "",
+        image_uri: queuedSong?.album.images[0].url,
+        message: songMessage,
+        room_id: {
+          link: roomObj,
+        }
+      },
+    }).then((res) => {
+      // Get Created Request ID
+      console.log(res)
+      const requestID = res.data.insertOneRequest._id
+      console.log(requestID);
+    }).catch((err) => {
+      console.log(err);
+      message.error(err);
+    });
   };
 
   return (
@@ -92,7 +125,7 @@ export default function Room() {
             }}
           />
           <Image
-            src={roomImage}
+            src={roomImage !== "" ? roomImage : logo}
             className="room-image"
             alt={roomName}
             preview={false}
@@ -130,70 +163,89 @@ export default function Room() {
       </Row>
       <Row className="App-content">
         <Col span={12}>
-          <Col className="App-now-playing">
-            <Row style={{ flex: 1, paddingBottom: 10 }}>
-              <Title level={5} style={{ color: "white" }}>
-                Now Playing
-              </Title>
-            </Row>
-            <Row style={{ flex: 4 }}>
-              <Image
-                src={roomImage}
-                className="now-playing-image"
-                alt={roomName}
-                preview={false}
-              />
-              <Col style={{ flex: 1.5, paddingLeft: 50 }}>
-                <Row style={{ alignItems: "center" }}>
-                  <Image
-                    src={roomImage}
-                    className="profile-image"
-                    alt={roomName}
-                    preview={false}
-                  />
+          {nowPlaying !== "" && (
+            <Col className="App-now-playing">
+              <Row style={{ flex: 1, paddingBottom: 10 }}>
+                <Title level={5} style={{ color: "white" }}>
+                  Now Playing
+                </Title>
+              </Row>
+              <Row style={{ flex: 4 }}>
+                <Image
+                  src={roomImage}
+                  className="now-playing-image"
+                  alt={roomName}
+                  preview={false}
+                />
+                <Col style={{ flex: 1.5, paddingLeft: 50 }}>
+                  <Row style={{ alignItems: "center" }}>
+                    <Image
+                      src={roomImage}
+                      className="profile-image"
+                      alt={roomName}
+                      preview={false}
+                    />
+                    <Title
+                      level={5}
+                      style={{
+                        color: "white",
+                        marginTop: 10,
+                      }}
+                    >
+                      Harin Wu
+                    </Title>
+                  </Row>
+                  <Text
+                    className="song-message"
+                    style={{ color: "white", fontSize: 20 }}
+                  >
+                    Harin Wu chose this song because it's cool.
+                  </Text>
+                </Col>
+              </Row>
+              <Row style={{ flex: 1 }}>
+                <Col
+                  style={{
+                    alignItems: "start",
+                    justifyContent: "start",
+                  }}
+                >
+                  <Title
+                    level={3}
+                    style={{
+                      color: "white",
+                      textAlign: "start",
+                      marginTop: 20,
+                    }}
+                  >
+                    Deja Vu
+                  </Title>
                   <Title
                     level={5}
                     style={{
                       color: "white",
-                      marginTop: 10,
+                      textAlign: "start",
+                      marginTop: -10,
                     }}
                   >
-                    Harin Wu
+                    Olivia Rodrigo
                   </Title>
-                </Row>
-                <Text
-                  className="song-message"
-                  style={{ color: "white", fontSize: 20 }}
-                >
-                  Harin Wu chose this song because it's cool.
-                </Text>
-              </Col>
-            </Row>
-            <Row style={{ flex: 1 }}>
-              <Col
-                style={{
-                  alignItems: "start",
-                  justifyContent: "start",
-                }}
-              >
-                <Title
-                  level={3}
-                  style={{ color: "white", textAlign: "start", marginTop: 20 }}
-                >
-                  Deja Vu
+                </Col>
+                <Col
+                  style={{ flex: 1.5, paddingLeft: 50, alignItems: "start" }}
+                ></Col>
+              </Row>
+            </Col>
+          )}
+          {nowPlaying === "" && (
+            <Col className="App-now-playing">
+              <Row style={{ flex: 1, paddingBottom: 10 }}>
+                <Title level={5} style={{ color: "white" }}>
+                  No Songs Currently Playing
                 </Title>
-                <Title
-                  level={5}
-                  style={{ color: "white", textAlign: "start", marginTop: -10 }}
-                >
-                  Olivia Rodrigo
-                </Title>
-              </Col>
-              <Col
-                style={{ flex: 1.5, paddingLeft: 50, alignItems: "start" }}
-              ></Col>
-            </Row>
-          </Col>
+              </Row>
+            </Col>
+          )}
           <Row
             style={{
               flex: 1,
@@ -344,55 +396,61 @@ export default function Room() {
             </Row>
           )}
           {queuedSong && (
-            <Col style={{ flex: 1, paddingBottom: 10, marginLeft: 30 }}>
+            <Col style={{ flex: 1, paddingBottom: 10, marginLeft: 30, display: 'flex', flexDirection: 'column' }}>
               <Row>
                 <Title level={5} style={{ color: "white" }}>
                   Include a Message
                 </Title>
               </Row>
-              <Row align="middle">
-                <Col span={3}>
+              <Row
+                align="middle"
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <Row>
                   <Image
                     src={queuedSong.album.images[0].url}
                     className="selected-image"
                     alt={roomName}
                     preview={false}
                   />
-                </Col>
-                <Col span={19}>
-                  <Row>
-                    <Title
-                      level={5}
-                      style={{
-                        color: "white",
-                        marginTop: 10,
-                      }}
-                    >
-                      {queuedSong.name}
-                    </Title>
-                  </Row>
-                  <Row>
-                    <Text
-                      style={{
-                        color: "white",
-                        fontSize: 14,
-                      }}
-                    >
-                      {queuedSong.artists[0].name}
-                    </Text>
-                  </Row>
-                </Col>
-                <Col span={2}>
-                  <Image
-                    src={roomImage}
-                    style={{ width: 30, height: 30 }}
-                    alt={roomName}
-                    preview={false}
-                    onClick={() => {
-                      setQueuedSong(undefined);
-                    }}
-                  />
-                </Col>
+                  <Col>
+                    <Row>
+                      <Title
+                        level={5}
+                        style={{
+                          color: "white",
+                          marginTop: 10,
+                        }}
+                      >
+                        {queuedSong.name}
+                      </Title>
+                    </Row>
+                    <Row>
+                      <Text
+                        style={{
+                          color: "white",
+                          fontSize: 14,
+                        }}
+                      >
+                        {queuedSong.artists[0].name}
+                      </Text>
+                    </Row>
+                  </Col>
+                </Row>
+                <Image
+                  className="image-button"
+                  src={close}
+                  style={{ width: 30, height: 30 }}
+                  alt={"Close"}
+                  preview={false}
+                  onClick={() => {
+                    setQueuedSong(undefined);
+                  }}
+                />
               </Row>
               <TextArea
                 placeholder="Write a message..."
@@ -404,9 +462,11 @@ export default function Room() {
                 style={{ marginTop: 20, width: "100%" }}
               />
               <Button
+                className="button"
                 type="primary"
                 shape="round"
                 size="large"
+                style={{marginTop: 20, alignSelf: 'flex-end', justifySelf: 'flex-end'}}
                 onClick={queueSong}
               >
                 Queue Song

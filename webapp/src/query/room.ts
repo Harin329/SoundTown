@@ -28,10 +28,8 @@ export const CREATE_ROOM = gql`
 `;
 
 export const GET_ROOM = gql`
-  query GetRoom(
-    $id: ObjectId!
-    ) {
-    room (query: { _id: $id } ) {
+  query GetRoom($id: ObjectId!) {
+    room(query: { _id: $id }) {
       _id
       admin
       creator
@@ -43,8 +41,15 @@ export const GET_ROOM = gql`
         creator
         message
         song
-        timestamp
       }
+    }
+  }
+`;
+
+export const GET_ANY_ROOM = gql`
+  query {
+    rooms(sortBy: NAME_DESC, limit: 1) {
+      _id
     }
   }
 `;
