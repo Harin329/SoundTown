@@ -3,6 +3,9 @@ const endpoint = 'https://accounts.spotify.com/authorize';
 const scope = [
     'user-read-private',
     'user-read-email',
+    'user-read-playback-state',
+    'user-modify-playback-state',
+    'user-read-currently-playing',
 ];
 
 export const getAuthorizeHref = (): string => {

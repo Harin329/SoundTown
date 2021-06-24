@@ -19,16 +19,9 @@ export const CREATE_REQUEST = gql`
         image_uri: $image_uri
         message: $message
         room_id: $room_id
+        played: false
       }
     ) {
-      _id
-    }
-  }
-`;
-
-export const GET_REQUEST = gql`
-  query GetRequest($id: ObjectId!) {
-    request(query: { _id: $id }) {
       _id
       song
       creator
@@ -36,6 +29,52 @@ export const GET_REQUEST = gql`
       creator_uri
       image_uri
       message
+      played
+      room_id {
+        _id
+      }
+    }
+  }
+`;
+
+export const PLAY_REQUEST = gql`
+  mutation PlayRequest(
+    $id: ObjectId!
+  ) {
+    updateOneRequest(
+      query: {
+        _id: $id
+      },
+      set: {
+        played: true
+      }
+    ) {
+      _id
+      song
+      creator
+      creator_name
+      creator_uri
+      image_uri
+      message
+      played
+      room_id {
+        _id
+      }
+    }
+  }
+`;
+
+export const GET_REQUEST = gql`
+  query GetNextRequest($id: RoomQueryInput!) {
+    request(query: { played: false, room_id: $id }) {
+      _id
+      song
+      creator
+      creator_name
+      creator_uri
+      image_uri
+      message
+      played
       room_id {
         _id
       }

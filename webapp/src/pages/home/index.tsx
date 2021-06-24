@@ -7,8 +7,11 @@ import { getHashParams, removeHashParams } from "../../utils/hashUtils";
 import {
   selectIsLoggedIn,
   setAccessToken,
+  setDisplayName,
+  setImageURI,
   setLoggedIn,
   setTokenExpiryDate,
+  setUID,
 } from "../../reducer/authReducer";
 import { getAuthorizeHref } from "../../oauthConfig";
 import logo from "../../images/logo.png";
@@ -17,6 +20,7 @@ import join from "../../images/join.png";
 import { useQuery } from "@apollo/client";
 import { setRoomID } from "../../reducer/roomReducer";
 import { GET_ANY_ROOM } from "../../query/room";
+import SpotifyWebApi from "spotify-web-api-js";
 
 const hashParams = getHashParams();
 const access_token = hashParams.access_token;
@@ -36,6 +40,17 @@ export default function Home() {
       dispatch(setLoggedIn(true));
       dispatch(setAccessToken(access_token));
       dispatch(setTokenExpiryDate(Number(expires_in)));
+
+      const client = new SpotifyWebApi();
+      client.setAccessToken(access_token);
+      client.getMe().then((res) => {
+        dispatch(setDisplayName(res.display_name!))
+        dispatch(setUID(res.uri))
+
+        if (res.images !== undefined && res.images.length > 0) {
+          dispatch(setImageURI(res.images![0].url))
+        }
+      })
     }
   });
 
