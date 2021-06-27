@@ -27,6 +27,25 @@ export const CREATE_ROOM = gql`
   }
 `;
 
+export const NOW_PLAYING = gql`
+  mutation NowPlaying($id: ObjectId!, $now_playing: RoomNow_playingRelationInput!) {
+    updateOneRoom(query: { _id: $id }, set: { now_playing: $now_playing }) {
+      _id
+      admin
+      creator
+      image_uri
+      listeners
+      name
+      now_playing {
+        _id
+        creator
+        message
+        song
+      }
+    }
+  }
+`;
+
 export const GET_ROOM = gql`
   query GetRoom($id: ObjectId!) {
     room(query: { _id: $id }) {

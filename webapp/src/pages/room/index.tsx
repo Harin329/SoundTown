@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useSelector } from "react-redux";
 import {
   Typography,
@@ -27,19 +27,34 @@ import {
   selectImageURI,
   selectUID,
 } from "../../reducer/authReducer";
-import { GET_ROOM } from "../../query/room";
+import { GET_ROOM, NOW_PLAYING } from "../../query/room";
 import { selectRoomID } from "../../reducer/roomReducer";
-import { CREATE_REQUEST, GET_REQUEST, PLAY_REQUEST } from "../../query/request";
+import {
+  CREATE_REQUEST,
+  GET_QUEUE,
+  GET_REQUEST,
+  PLAY_REQUEST,
+} from "../../query/request";
+import { CREATE_USER, GET_USER_IN_ROOM, USER_STAY } from "../../query/user";
 
 interface Request {
   _id: string;
   song: string;
+  song_name: string;
   creator: string;
   creator_name: string;
   creator_uri: string;
   image_uri: string;
   message: string;
   room_id?: any;
+}
+
+interface User {
+  _id: string;
+  id: string;
+  current_room: string;
+  user_image: string;
+  user_name: string;
 }
 
 export default function Room() {
@@ -53,14 +68,14 @@ export default function Room() {
   const [nowRequest, setNowRequest] = useState<Request>();
   const [songMessage, setMessage] = useState("");
   const [paused, setPaused] = useState(true);
-  const [listeners, setListeners] = useState([]);
-  const [queue, setQueue] = useState([1, 2, 3, 4, 5]);
+  const [listeners, setListener] = useState<User[]>([]);
   const [searchResult, setSearchResult] = useState<
     SpotifyApi.TrackObjectFull[] | undefined
   >([]);
   const [queuedSong, setQueuedSong] = useState<SpotifyApi.TrackObjectFull>();
   const [query, setQuery] = useState("");
   const [queueMessage, setQueueMessage] = useState("");
+  const [queueEntry, setQueueEntry] = useState("");
   const token = useSelector(selectAccessToken);
   const displayName = useSelector(selectDisplayName);
   const userID = useSelector(selectUID);
@@ -77,13 +92,40 @@ export default function Room() {
 
   console.log(roomID);
 
+  const myID = "";
+
   const { loading, error, data } = useQuery(GET_ROOM, {
     variables: { id: roomID },
   });
+  const { refetch: refetchListeners } = useQuery(GET_USER_IN_ROOM);
+  const { refetch } = useQuery(GET_REQUEST, {
+    variables: {
+      id: {
+        _id: roomID,
+      },
+    },
+  });
+  const {
+    loading: queueLoading,
+    data: queue,
+    refetch: refetchQueue,
+    stopPolling: stopQueueRefetch,
+  } = useQuery(GET_QUEUE, {
+    variables: {
+      id: {
+        _id: roomID,
+      },
+    },
+    pollInterval: 1000,
+  });
+  const [createRequest] = useMutation(CREATE_REQUEST);
+  const [playRequest] = useMutation(PLAY_REQUEST);
+  const [createUser] = useMutation(CREATE_USER);
+  const [keepUser] = useMutation(USER_STAY);
+  const [mutateNowPlaying] = useMutation(NOW_PLAYING);
 
   useEffect(() => {
     if (!loading) {
-      console.log(data);
       setRoomObj(data.room._id);
       setRoomName(data.room.name);
       setRoomImage(data.room.image_uri);
@@ -94,18 +136,67 @@ export default function Room() {
   }, [data, error, loading]);
 
   useEffect(() => {
-    const searchSong = (e: string) => {
-      spotifyClient
-        .search(e, ["track"])
-        .then((res) => {
-          const results = res.tracks?.items.sort(
-            (a, b) => b.popularity - a.popularity
-          );
-          setSearchResult(results);
-        })
-        .catch((err) => {
-          console.log(err);
+    console.log('gotime')
+    console.log(queueLoading)
+    console.log(loading)
+    if (!queueLoading && !loading) {
+      if (queueEntry === "") {
+        refetchListeners({ current_room: roomID + data.room._id }).then(
+          (res) => {
+            if (res.data.users.length === 0) {
+              stopQueueRefetch();
+              spotifyClient.getMe().then((myRes) => {
+                createUser({
+                  variables: {
+                    id: myRes.id,
+                    current_room: "",
+                    user_image: myRes.images![0].url,
+                    user_name: myRes.display_name,
+                  },
+                }).then(() => {
+                  playNext(true);
+                });
+              });
+            }
+          }
+        );
+        setQueueEntry(queue.requests[0]._id);
+      } else if (queue.requests.length > 0 && queueEntry !== queue.requests[0]._id) {
+        stopQueueRefetch();
+        spotifyClient.getMe().then((myRes) => {
+          createUser({
+            variables: {
+              id: myRes.id,
+              current_room: "",
+              user_image: myRes.images![0].url,
+              user_name: myRes.display_name,
+            },
+          }).then(() => {
+            playNext(true);
+          });
         });
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    queue,
+  ]);
+
+  useEffect(() => {
+    const searchSong = (e: string) => {
+      if (e !== "") {
+        spotifyClient
+          .search(e, ["track"])
+          .then((res) => {
+            const results = res.tracks?.items.sort(
+              (a, b) => b.popularity - a.popularity
+            );
+            setSearchResult(results);
+          })
+          .catch((err) => {
+            console.log(err);
+          });
+      }
     };
 
     const timeout_id = setTimeout(() => {
@@ -115,52 +206,68 @@ export default function Room() {
     return () => clearTimeout(timeout_id);
   }, [query, spotifyClient]);
 
-  const [createRequest] = useMutation(CREATE_REQUEST);
-  const [playRequest] = useMutation(PLAY_REQUEST);
-  const { data: nextRequest, refetch } = useQuery(GET_REQUEST, {
-    variables: {
-      id: {
-        _id: roomID,
-      },
-    },
-  });
-
-  const playNext = () => {
+  const playNext = (skip: boolean) => {
     refetch({
       id: {
         _id: roomID,
       },
-    }).then((res) => {
-      const next = res.data.request;
-      spotifyClient
-        .queue(next.song)
-        .then(() => {
-          spotifyClient.getTrack(next.song.split(":")[2]).then((songObj) => {
-            setPaused(false);
-            setNowPlaying(songObj);
-            setMessage(next.message);
-            setNowRequest(next);
-            playRequest({
-              variables: {
-                id: next._id,
-              },
-            });
+    })
+      .then((res) => {
+        const next = res.data.request;
+        spotifyClient
+          .queue(next.song)
+          .then(() => {
+            spotifyClient.getTrack(next.song.split(":")[2]).then((songObj) => {
+              if (skip) {
+                spotifyClient.skipToNext();
+              }
+              setPaused(false);
+              setNowPlaying(songObj);
+              setMessage(next.message);
+              setNowRequest(next);
+              keepUser({
+                variables: { id: myID, current_room: roomID + next._id },
+              });
+              playRequest({
+                variables: {
+                  id: next._id,
+                },
+              }).then(() => {
+                if (true) {
+                  mutateNowPlaying({
+                    variables: {
+                      id: roomID,
+                      now_playing: {
+                        link: next,
+                      },
+                    },
+                  });
+                }
+                refetchQueue();
+                refetchListeners({ current_room: roomID + next._id }).then(
+                  (res) => {
+                    setListener(res.data.users);
+                  }
+                );
+              });
 
-            setTimeout(() => {
-              playNext();
-            }, songObj?.duration_ms! - 5000);
+              setTimeout(() => {
+                playNext(false);
+              }, songObj?.duration_ms! - 5000);
+            });
+          })
+          .catch((err) => {
+            console.log(err);
+            message.info(
+              "Please start playing music on a spotify connected device first!"
+            );
           });
-        })
-        .catch((err) => {
-          console.log(err);
-          message.info(
-            "Please start playing music on a spotify connected device first!"
-          );
-        });
-    }).catch((err) => {
-      console.log(err);
-      console.log("no more songs");
-    });
+      })
+      .catch((err) => {
+        console.log(err);
+        setNowPlaying(undefined);
+        setNowRequest(undefined);
+      });
   };
 
   const playNow = (
@@ -182,10 +289,21 @@ export default function Room() {
               variables: {
                 id: requestObj._id,
               },
+            }).then(() => {
+              if (true) {
+                mutateNowPlaying({
+                  variables: {
+                    now_playing: {
+                      link: requestObj,
+                    },
+                  },
+                });
+              }
+              refetchQueue();
             });
 
             setTimeout(() => {
-              playNext();
+              playNext(false);
             }, songObj?.duration_ms! - 5000);
           })
           .catch(() => {
@@ -232,6 +350,7 @@ export default function Room() {
     createRequest({
       variables: {
         song: queuedSong?.uri,
+        song_name: queuedSong?.name,
         creator: userID,
         creator_name: displayName,
         creator_uri: user_image,
@@ -249,6 +368,8 @@ export default function Room() {
 
         if (!nowPlaying) {
           playNow(queuedSong, res.data.insertOneRequest);
+        } else {
+          refetchQueue();
         }
 
         setQueuedSong(undefined);
@@ -425,46 +546,48 @@ export default function Room() {
                 Tuned In
               </Title>
             </Row>
-            <Row
-              style={{
-                justifyContent: "space-evenly",
-              }}
-            >
-              <Row style={{ alignItems: "center" }}>
-                <Image
-                  src={roomImage}
-                  className="tunedin-image"
-                  alt={roomName}
-                  preview={false}
-                />
-                <Title
-                  level={5}
-                  style={{
-                    color: "white",
-                    marginTop: 10,
-                  }}
-                >
-                  Harin Wu
-                </Title>
+            {listeners.length > 1 && (
+              <Row
+                style={{
+                  justifyContent: "space-evenly",
+                }}
+              >
+                <Row style={{ alignItems: "center" }}>
+                  <Image
+                    src={listeners[0].user_image}
+                    className="tunedin-image"
+                    alt={listeners[0].user_name}
+                    preview={false}
+                  />
+                  <Title
+                    level={5}
+                    style={{
+                      color: "white",
+                      marginTop: 10,
+                    }}
+                  >
+                    {listeners[0].user_name}
+                  </Title>
+                </Row>
+                <Row style={{ alignItems: "center" }}>
+                  <Image
+                    src={listeners[1].user_image}
+                    className="tunedin-image"
+                    alt={listeners[1].user_name}
+                    preview={false}
+                  />
+                  <Title
+                    level={5}
+                    style={{
+                      color: "white",
+                      marginTop: 10,
+                    }}
+                  >
+                    {listeners.length - 1} Other Listeners
+                  </Title>
+                </Row>
               </Row>
-              <Row style={{ alignItems: "center" }}>
-                <Image
-                  src={roomImage}
-                  className="tunedin-image"
-                  alt={roomName}
-                  preview={false}
-                />
-                <Title
-                  level={5}
-                  style={{
-                    color: "white",
-                    marginTop: 10,
-                  }}
-                >
-                  23 Other Listeners
-                </Title>
-              </Row>
-            </Row>
+            )}
           </Row>
         </Col>
         <Col className="App-request" span={12}>
@@ -484,6 +607,7 @@ export default function Room() {
                 return (
                   <Col
                     className="resultBlock"
+                    key={res.id}
                     style={{
                       width: "25%",
                       height: 250,
@@ -500,7 +624,7 @@ export default function Room() {
                         width: 150,
                         height: 150,
                         objectFit: "cover",
-                        borderRadius: 20,
+                        borderRadius: 10,
                       }}
                       alt="example"
                       src={res.album.images[0].url}
@@ -530,35 +654,41 @@ export default function Room() {
                   </Col>
                 );
               })}
-              <Col
-                style={{
-                  width: "25%",
-                  height: 250,
-                  alignItems: "start",
-                  display: "flex",
-                  flexDirection: "column",
-                }}
-              >
+              {searchResult !== undefined && searchResult.length >= 8 && (
                 <Col
                   style={{
-                    fontSize: 18,
-                    textAlign: "start",
-                    width: 150,
-                    height: 150,
-                    backgroundColor: "black",
-                    borderRadius: 20,
-                    justifyContent: "center",
+                    width: "25%",
+                    height: 250,
+                    alignItems: "start",
                     display: "flex",
-                    alignItems: "center",
+                    flexDirection: "column",
                   }}
                 >
-                  <Text
-                    style={{ color: "white", fontSize: 18, textAlign: "start" }}
+                  <Col
+                    style={{
+                      fontSize: 18,
+                      textAlign: "start",
+                      width: 150,
+                      height: 150,
+                      backgroundColor: "black",
+                      borderRadius: 10,
+                      justifyContent: "center",
+                      display: "flex",
+                      alignItems: "center",
+                    }}
                   >
-                    See More
-                  </Text>
+                    <Text
+                      style={{
+                        color: "white",
+                        fontSize: 18,
+                        textAlign: "start",
+                      }}
+                    >
+                      See More
+                    </Text>
+                  </Col>
                 </Col>
-              </Col>
+              )}
             </Row>
           )}
           {queuedSong && (
@@ -665,27 +795,28 @@ export default function Room() {
             justifyContent: "space-evenly",
           }}
         >
-          {queue.map((res) => {
-            return (
-              <Row align="middle">
-                <Image
-                  src={roomImage}
-                  className="nextsong-image"
-                  alt={roomName}
-                  preview={false}
-                />
-                <Title
-                  level={5}
-                  style={{
-                    color: "white",
-                    marginTop: 10,
-                  }}
-                >
-                  Deja Vu
-                </Title>
-              </Row>
-            );
-          })}
+          {queue !== undefined &&
+            queue.requests.map((res: any) => {
+              return (
+                <Row align="middle" key={res._id}>
+                  <Image
+                    src={res.image_uri}
+                    className="nextsong-image"
+                    alt={res.song}
+                    preview={false}
+                  />
+                  <Title
+                    level={5}
+                    style={{
+                      color: "white",
+                      marginTop: 10,
+                    }}
+                  >
+                    {res.song_name}
+                  </Title>
+                </Row>
+              );
+            })}
         </Col>
       </Row>
     </Space>

@@ -52,7 +52,7 @@
 .room-image {
   height: 70px;
   width: 70px;
-  border-radius: 20px;
+  border-radius: 10px;
   object-fit: cover;
   margin-left: 10px;
   margin-right: 10px;
@@ -61,7 +61,7 @@
 .now-playing-image {
   height: 250px;
   width: 250px;
-  border-radius: 20px;
+  border-radius: 10px;
   object-fit: cover;
 }
 
@@ -84,7 +84,7 @@
 .nextsong-image {
   height: 100px;
   width: 100px;
-  border-radius: 20px;
+  border-radius: 10px;
   object-fit: cover;
   margin-right: 10px;
 }
@@ -92,7 +92,7 @@
 .selected-image {
   height: 80px;
   width: 80px;
-  border-radius: 20px;
+  border-radius: 10px;
   object-fit: cover;
   margin-right: 10px;
 }
@@ -129,7 +129,7 @@
 
 .App-now-playing {
   height: 50vh;
-  border-radius: 20px;
+  border-radius: 10px;
   padding: 30px;
   font-size: calc(10px + 2vmin);
   background-color: #025034;
@@ -137,7 +137,7 @@
 }
 
 .App-request {
-  border-radius: 20px;
+  border-radius: 10px;
   padding: 20px;
   font-size: calc(10px + 2vmin);
   color: white;

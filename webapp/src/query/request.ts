@@ -3,6 +3,7 @@ import gql from "graphql-tag";
 export const CREATE_REQUEST = gql`
   mutation CreateRequest(
     $song: String!
+    $song_name: String!
     $creator: String
     $creator_name: String
     $creator_uri: String
@@ -13,6 +14,7 @@ export const CREATE_REQUEST = gql`
     insertOneRequest(
       data: {
         song: $song
+        song_name: $song_name
         creator: $creator
         creator_name: $creator_name
         creator_uri: $creator_uri
@@ -24,6 +26,7 @@ export const CREATE_REQUEST = gql`
     ) {
       _id
       song
+      song_name
       creator
       creator_name
       creator_uri
@@ -51,6 +54,7 @@ export const PLAY_REQUEST = gql`
     ) {
       _id
       song
+      song_name
       creator
       creator_name
       creator_uri
@@ -69,6 +73,26 @@ export const GET_REQUEST = gql`
     request(query: { played: false, room_id: $id }) {
       _id
       song
+      song_name
+      creator
+      creator_name
+      creator_uri
+      image_uri
+      message
+      played
+      room_id {
+        _id
+      }
+    }
+  }
+`;
+
+export const GET_QUEUE = gql`
+  query GetQueue($id: RoomQueryInput!) {
+    requests(query: { played: false, room_id: $id }, limit: 6) {
+      _id
+      song
+      song_name
       creator
       creator_name
       creator_uri
