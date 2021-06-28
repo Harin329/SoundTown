@@ -76,6 +76,7 @@ export default function Room() {
   const [query, setQuery] = useState("");
   const [queueMessage, setQueueMessage] = useState("");
   const [queueEntry, setQueueEntry] = useState("");
+  const [initialLoad, setInitialLoad] = useState(false);
   const token = useSelector(selectAccessToken);
   const displayName = useSelector(selectDisplayName);
   const userID = useSelector(selectUID);
@@ -116,7 +117,7 @@ export default function Room() {
         _id: roomID,
       },
     },
-    pollInterval: 1000,
+    pollInterval: 10000,
   });
   const [createRequest] = useMutation(CREATE_REQUEST);
   const [playRequest] = useMutation(PLAY_REQUEST);
@@ -136,10 +137,7 @@ export default function Room() {
   }, [data, error, loading]);
 
   useEffect(() => {
-    console.log('gotime')
-    console.log(queueLoading)
-    console.log(loading)
-    if (!queueLoading && !loading) {
+    if (!queueLoading && !loading && !initialLoad) {
       if (queueEntry === "") {
         refetchListeners({ current_room: roomID + data.room._id }).then(
           (res) => {
@@ -155,13 +153,17 @@ export default function Room() {
                   },
                 }).then(() => {
                   playNext(true);
+                  setInitialLoad(true);
                 });
               });
             }
           }
         );
         setQueueEntry(queue.requests[0]._id);
-      } else if (queue.requests.length > 0 && queueEntry !== queue.requests[0]._id) {
+      } else if (
+        queue.requests.length > 0 &&
+        queueEntry !== queue.requests[0]._id
+      ) {
         stopQueueRefetch();
         spotifyClient.getMe().then((myRes) => {
           createUser({
@@ -173,14 +175,13 @@ export default function Room() {
             },
           }).then(() => {
             playNext(true);
+            setInitialLoad(true);
           });
         });
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    queue,
-  ]);
+  }, [queue]);
 
   useEffect(() => {
     const searchSong = (e: string) => {
