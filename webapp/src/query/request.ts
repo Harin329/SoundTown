@@ -87,6 +87,25 @@ export const GET_REQUEST = gql`
   }
 `;
 
+export const GET_REQUEST_BY_ID = gql`
+  query GetRequestByID($id: ObjectId!) {
+    request(query: { _id: $id }) {
+      _id
+      song
+      song_name
+      creator
+      creator_name
+      creator_uri
+      image_uri
+      message
+      played
+      room_id {
+        _id
+      }
+    }
+  }
+`;
+
 export const GET_QUEUE = gql`
   query GetQueue($id: RoomQueryInput!) {
     requests(query: { played: false, room_id: $id }, limit: 6) {

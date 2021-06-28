@@ -3,7 +3,6 @@ import gql from "graphql-tag";
 export const CREATE_USER = gql`
   mutation CreateUser(
     $id: String!
-    $current_room: String!
     $user_image: String
     $user_name: String
   ) {
@@ -11,14 +10,12 @@ export const CREATE_USER = gql`
       query: { id: $id }
       data: {
         id: $id
-        current_room: $current_room
         user_image: $user_image
         user_name: $user_name
       }
     ) {
       _id
       id
-      current_room
       user_image
       user_name
     }

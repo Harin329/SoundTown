@@ -45,12 +45,20 @@ export default function Home() {
       client.setAccessToken(access_token);
       client.getMe().then((res) => {
         dispatch(setDisplayName(res.display_name!))
-        dispatch(setUID(res.uri))
+        dispatch(setUID(res.id))
 
         if (res.images !== undefined && res.images.length > 0) {
           dispatch(setImageURI(res.images![0].url))
         }
       })
+    }
+  });
+
+  useEffect(() => {
+    const ID = localStorage.getItem('roomID');
+
+    if (ID) {
+      joinRoom(ID);
     }
   });
 
@@ -62,9 +70,8 @@ export default function Home() {
     history.push("/createRoom");
   };
 
-  const joinRoom = () => {
+  const joinRoom = (roomID: string) => {
     if (!loading) {
-      const roomID = data.rooms[0]._id;
       dispatch(setRoomID(roomID));
       history.push("/room/" + roomID);
     }
@@ -106,7 +113,7 @@ export default function Home() {
               type="primary"
               shape="round"
               icon={<Image src={join} width={50} preview={false} />}
-              onClick={joinRoom}
+              onClick={() => joinRoom(data.rooms[0]._id)}
             >
               Join a Room
             </Button>

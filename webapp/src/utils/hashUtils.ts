@@ -14,3 +14,7 @@ export const getHashParams = () => {
 export const removeHashParams = () => {
     window.history.pushState("", document.title, window.location.pathname + window.location.search);
 }
+
+export const getHashID = () => {
+    return window.location.pathname.substring(1).split("/")[1];
+}
