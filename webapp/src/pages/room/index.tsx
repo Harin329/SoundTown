@@ -84,6 +84,7 @@ export default function Room() {
   const [query, setQuery] = useState("");
   const [queueMessage, setQueueMessage] = useState("");
   const [queueEntry, setQueueEntry] = useState("");
+  const [firstLoad, setFirstLoad] = useState(true);
   const [initialLoad, setInitialLoad] = useState(false);
   const token = useSelector(selectAccessToken);
   const displayName = useSelector(selectDisplayName);
@@ -130,7 +131,7 @@ export default function Room() {
         _id: roomID,
       },
     },
-    pollInterval: 10000,
+    pollInterval: 1000,
   });
   const [createRequest] = useMutation(CREATE_REQUEST);
   const [playRequest] = useMutation(PLAY_REQUEST);
@@ -154,34 +155,107 @@ export default function Room() {
     }
   }, [data, error, loading, token]);
 
-  useEffect(() => {
-    if (
-      !queueLoading &&
-      !loading &&
-      !initialLoad &&
-      queue.requests.length > 0
-    ) {
-      if (queueEntry === "") {
-        refetchListeners({ current_room: roomID + "_" + data.room._id }).then(
-          (res) => {
-            if (res.data.users.length === 0) {
-              stopQueueRefetch();
-              createUser({
-                variables: {
-                  id: userID,
-                  user_image: user_image,
-                  user_name: displayName,
-                },
-              }).then(() => {
-                playNext(true, 5000);
-                setInitialLoad(true);
-              });
-            }
+  const soloUser = (d: any) => {
+    console.log(d);
+    if (d.room.now_playing !== null) {
+      refetchListeners({
+        current_room: roomID + "_" + d.room.now_playing._id,
+      })
+        .then((res) => {
+          console.log(res.data);
+          if (res.data.users.length === 0 || res.data.users[0].id === userID) {
+            stopQueueRefetch();
+            createUser({
+              variables: {
+                id: userID,
+                user_image: user_image,
+                user_name: displayName,
+              },
+            }).then(() => {
+              playNext(true, 5000);
+              console.log("playing next!")
+              setInitialLoad(true);
+            });
           }
-        );
-        setQueueEntry(queue.requests[0]._id);
-      } else if (queueEntry !== queue.requests[0]._id) {
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+    } else {
+      stopQueueRefetch();
+      createUser({
+        variables: {
+          id: userID,
+          user_image: user_image,
+          user_name: displayName,
+        },
+      }).then(() => {
+        playNext(true, 5000);
+        console.log("playing next!")
+        setInitialLoad(true);
+      });
+    }
+  };
+
+  // Poll Until Ready to Play New Song
+  useEffect(() => {
+    if (!queueLoading && !loading && !initialLoad && !currentUserLoading) {
+      console.log(queueEntry);
+      if (queueEntry === "") {
+        spotifyClient
+          .getMyCurrentPlayingTrack()
+          .then((res) => {
+            const currentSong = res.item?.id;
+            if (
+              currentUser.user.current_room !== undefined &&
+              currentUser.user.current_room.split("_").length >= 1
+            ) {
+              const currentUserRequest =
+                currentUser.user.current_room.split("_")[1];
+              refetchRequest({ id: currentUserRequest })
+                .then((reqRes) => {
+                  const song = reqRes.data.request.song.split(":")[2];
+                  if (song === currentSong) {
+                    spotifyClient.getTrack(song).then((songObj) => {
+                      stopQueueRefetch();
+                      setPaused(false);
+                      setNowPlaying(songObj);
+                      setMessage(reqRes.data.request.message);
+                      setNowRequest(reqRes.data.request);
+                      setFirstLoad(false);
+                      setTimeout(() => {
+                        playNext(false, 500);
+                        console.log("playing next!")
+                      }, songObj?.duration_ms! - res.progress_ms! - 2000);
+                    });
+                  } else {
+                    console.log("not current song");
+                    soloUser(data);
+                  }
+                })
+                .catch((err) => {
+                  console.log(err);
+                  soloUser(data);
+                });
+            } else {
+              console.log("current room null");
+              soloUser(data);
+            }
+          })
+          .catch((err) => {
+            console.log(err);
+            soloUser(data);
+          });
+        if (queue.requests.length > 0) {
+          setQueueEntry(queue.requests[0]._id);
+        }
+      } else if (
+        queue.requests.length > 0 &&
+        queueEntry !== queue.requests[0]._id &&
+        firstLoad
+      ) {
         stopQueueRefetch();
+        setFirstLoad(false);
         createUser({
           variables: {
             id: userID,
@@ -190,12 +264,13 @@ export default function Room() {
           },
         }).then(() => {
           playNext(true, 5000);
+          console.log("playing next!")
           setInitialLoad(true);
         });
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [queue]);
+  }, [queue, queueLoading, loading, initialLoad, currentUserLoading]);
 
   // Used to lazy search songs
   useEffect(() => {
@@ -222,38 +297,6 @@ export default function Room() {
     return () => clearTimeout(timeout_id);
   }, [query, spotifyClient]);
 
-  // Used to see if music is to be resumed
-  useEffect(() => {
-    if (!currentUserLoading) {
-      spotifyClient
-        .getMyCurrentPlayingTrack()
-        .then((res) => {
-          const currentSong = res.item?.id;
-          if (
-            currentUser.user.current_room !== undefined &&
-            currentUser.user.current_room.split("_").length >= 1
-          ) {
-            const currentUserRequest =
-              currentUser.user.current_room.split("_")[1];
-            refetchRequest({ id: currentUserRequest }).then((reqRes) => {
-              const song = reqRes.data.request.split(":")[2];
-              if (song === currentSong) {
-                spotifyClient.getTrack(song).then((songObj) => {
-                  setTimeout(() => {
-                    playNext(false, 500);
-                  }, songObj?.duration_ms! - res.progress_ms! - 2000);
-                })
-              }
-            });
-          }
-        })
-        .catch((err) => {
-          console.log(err);
-        });
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentUser, currentUserLoading, refetchRequest, spotifyClient]);
-
   const playNext = (skip: boolean, timeout: number) => {
     refetch({
       id: {
@@ -261,6 +304,7 @@ export default function Room() {
       },
     })
       .then((res) => {
+        console.log(res);
         const next = res.data.request;
         if (next) {
           spotifyClient
@@ -299,13 +343,14 @@ export default function Room() {
                       }
                       refetchQueue();
                       refetchListeners({
-                        current_room: roomID + next._id,
+                        current_room: roomID + "_" + next._id,
                       }).then((res) => {
                         console.log(res.data.users);
                         setListener(res.data.users);
 
                         setTimeout(() => {
                           playNext(false, 500);
+                          console.log("playing next!")
                         }, songObj?.duration_ms! - timeout);
                       });
                     });
@@ -318,6 +363,8 @@ export default function Room() {
                 "Please start playing music on a spotify connected device first!"
               );
             });
+        } else {
+          console.log("nothing else to play")
         }
       })
       .catch((err) => {
@@ -331,58 +378,112 @@ export default function Room() {
     songObj: SpotifyApi.TrackObjectFull | undefined,
     requestObj: any
   ) => {
-    spotifyClient
-      .queue(songObj!.uri)
-      .then(() => {
+    setFirstLoad(false);
+    spotifyClient.getMyCurrentPlaybackState().then((state) => {
+      if (state.is_playing) {
         spotifyClient
-          .play()
-          .then(() => {
-            spotifyClient.skipToNext();
-            setPaused(false);
-            setNowPlaying(songObj);
-            setMessage(requestObj.message);
-            setNowRequest(requestObj);
-            keepUser({
-              variables: {
-                id: userID,
-                current_room: roomID + "_" + requestObj._id,
-              },
-            }).then((res) => {
-              console.log(res);
-              playRequest({
+            .queue(songObj!.uri)
+            .then(() => {
+              setPaused(false);
+              setNowPlaying(songObj);
+              setMessage(requestObj.message);
+              setNowRequest(requestObj);
+              keepUser({
                 variables: {
-                  id: requestObj._id,
+                  id: userID,
+                  current_room: roomID + "_" + requestObj._id,
                 },
-              }).then(() => {
-                if (true) {
-                  mutateNowPlaying({
-                    variables: {
-                      id: roomID,
-                      now_playing: {
-                        link: requestObj._id,
+              }).then((res) => {
+                console.log(res);
+                playRequest({
+                  variables: {
+                    id: requestObj._id,
+                  },
+                }).then(() => {
+                  if (true) {
+                    mutateNowPlaying({
+                      variables: {
+                        id: roomID,
+                        now_playing: {
+                          link: requestObj._id,
+                        },
                       },
-                    },
-                  });
-                }
-                refetchQueue();
+                    });
+                  }
+                  refetchQueue();
+                });
+                spotifyClient.skipToNext();
+  
+                setTimeout(() => {
+                  playNext(false, 500);
+                  console.log("playing next!")
+                }, songObj?.duration_ms! - 5000);
               });
-
-              setTimeout(() => {
-                playNext(false, 500);
-              }, songObj?.duration_ms! - 5000);
+            })
+            .catch((err) => {
+              console.log(err);
+              message.info(
+                "Please start playing music on a spotify connected device first!"
+              );
             });
-          })
-          .catch(() => {
-            message.info(
-              "Please start playing music on a spotify connected device first!"
-            );
-          });
-      })
-      .catch(() => {
-        message.info(
-          "Please start playing music on a spotify connected device first!"
-        );
-      });
+      } else {
+        spotifyClient
+        .play()
+        .then(() => {
+          spotifyClient
+            .queue(songObj!.uri)
+            .then(() => {
+              setPaused(false);
+              setNowPlaying(songObj);
+              setMessage(requestObj.message);
+              setNowRequest(requestObj);
+              keepUser({
+                variables: {
+                  id: userID,
+                  current_room: roomID + "_" + requestObj._id,
+                },
+              }).then((res) => {
+                console.log(res);
+                playRequest({
+                  variables: {
+                    id: requestObj._id,
+                  },
+                }).then(() => {
+                  if (true) {
+                    mutateNowPlaying({
+                      variables: {
+                        id: roomID,
+                        now_playing: {
+                          link: requestObj._id,
+                        },
+                      },
+                    });
+                  }
+                  refetchQueue();
+                });
+                spotifyClient.skipToNext();
+  
+                setTimeout(() => {
+                  playNext(false, 500);
+                  console.log("playing next!")
+                }, songObj?.duration_ms! - 5000);
+              });
+            })
+            .catch((err) => {
+              console.log(err);
+              message.info(
+                "Please start playing music on a spotify connected device first!"
+              );
+            });
+        })
+        .catch((err) => {
+          console.log(err);
+          message.info(
+            "Please start playing music on a spotify connected device first!"
+          );
+        });
+      }
+    })
   };
 
   const togglePause = () => {
@@ -432,6 +533,7 @@ export default function Room() {
         // const requestID = res.data.insertOneRequest._id;
         // console.log(requestID);
 
+        (console.log(nowPlaying));
         if (!nowPlaying) {
           playNow(queuedSong, res.data.insertOneRequest);
         } else {
