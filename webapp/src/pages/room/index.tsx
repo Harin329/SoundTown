@@ -95,6 +95,7 @@ export default function Room() {
     client.setAccessToken(token);
     return client;
   }, [token]);
+  const timeouts: NodeJS.Timeout[] = [];
 
   document.body.style.overflow = "hidden";
 
@@ -176,6 +177,8 @@ export default function Room() {
               console.log("playing next!")
               setInitialLoad(true);
             });
+          } else {
+            setFirstLoad(true);
           }
         })
         .catch((err) => {
@@ -223,10 +226,11 @@ export default function Room() {
                       setMessage(reqRes.data.request.message);
                       setNowRequest(reqRes.data.request);
                       setFirstLoad(false);
-                      setTimeout(() => {
+                      const time = setTimeout(() => {
                         playNext(false, 500);
                         console.log("playing next!")
                       }, songObj?.duration_ms! - res.progress_ms! - 2000);
+                      timeouts.push(time);
                     });
                   } else {
                     console.log("not current song");
@@ -348,10 +352,11 @@ export default function Room() {
                         console.log(res.data.users);
                         setListener(res.data.users);
 
-                        setTimeout(() => {
+                        const time = setTimeout(() => {
                           playNext(false, 500);
                           console.log("playing next!")
                         }, songObj?.duration_ms! - timeout);
+                        timeouts.push(time);
                       });
                     });
                   });
@@ -414,10 +419,11 @@ export default function Room() {
                 });
                 spotifyClient.skipToNext();
   
-                setTimeout(() => {
+                const time = setTimeout(() => {
                   playNext(false, 500);
                   console.log("playing next!")
                 }, songObj?.duration_ms! - 5000);
+                timeouts.push(time);
               });
             })
             .catch((err) => {
@@ -463,10 +469,11 @@ export default function Room() {
                 });
                 spotifyClient.skipToNext();
   
-                setTimeout(() => {
+                const time = setTimeout(() => {
                   playNext(false, 500);
                   console.log("playing next!")
                 }, songObj?.duration_ms! - 5000);
+                timeouts.push(time);
               });
             })
             .catch((err) => {
@@ -492,6 +499,47 @@ export default function Room() {
         .play()
         .then(() => {
           setPaused(false);
+          spotifyClient
+          .getMyCurrentPlayingTrack()
+          .then((res) => {
+            const currentSong = res.item?.id;
+            if (
+              currentUser.user.current_room !== undefined &&
+              currentUser.user.current_room.split("_").length >= 1
+            ) {
+              const currentUserRequest =
+                currentUser.user.current_room.split("_")[1];
+              refetchRequest({ id: currentUserRequest })
+                .then((reqRes) => {
+                  const song = reqRes.data.request.song.split(":")[2];
+                  if (song === currentSong) {
+                    spotifyClient.getTrack(song).then((songObj) => {
+                      stopQueueRefetch();
+                      setPaused(false);
+                      setNowPlaying(songObj);
+                      setMessage(reqRes.data.request.message);
+                      setNowRequest(reqRes.data.request);
+                      const time = setTimeout(() => {
+                        playNext(false, 500);
+                        console.log("playing next!")
+                      }, songObj?.duration_ms! - res.progress_ms! - 2000);
+                      timeouts.push(time);
+                    });
+                  } else {
+                    console.log("not current song");
+                    soloUser(data);
+                  }
+                })
+                .catch((err) => {
+                  console.log(err);
+                });
+            } else {
+              console.log("current room null");
+            }
+          })
+          .catch((err) => {
+            console.log(err);
+          });
         })
         .catch(() => {
           message.info(
@@ -503,6 +551,9 @@ export default function Room() {
         .pause()
         .then(() => {
           setPaused(true);
+          timeouts.forEach((time) => {
+            clearTimeout(time);
+          })
         })
         .catch(() => {
           message.info(
