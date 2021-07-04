@@ -46,6 +46,25 @@ export const NOW_PLAYING = gql`
   }
 `;
 
+export const NONE_PLAYING = gql`
+  mutation NonePlaying($id: ObjectId!) {
+    updateOneRoom(query: { _id: $id }, set: { now_playing_unset: true }) {
+      _id
+      admin
+      creator
+      image_uri
+      listeners
+      name
+      now_playing {
+        _id
+        creator
+        message
+        song
+      }
+    }
+  }
+`;
+
 export const GET_ROOM = gql`
   query GetRoom($id: ObjectId!) {
     room(query: { _id: $id }) {
