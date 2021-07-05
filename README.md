@@ -12,6 +12,8 @@
   </p>
 </p>
 
+![Deployment](https://github.com/Harin329/SoundTown/actions/workflows/azure-static-web-apps-brave-stone-00b01361e.yml/badge.svg)
+
 
 
 <!-- TABLE OF CONTENTS -->
