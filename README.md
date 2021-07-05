@@ -2,7 +2,7 @@
 <br />
 <p align="center">
   <a href="https://github.com/harin329/SoundTown">
-    <img src="webapp/src/images/logo.png" alt="Logo" width="150" height="30" resize>
+    <img src="webapp/src/images/logo.png" alt="Logo" width="150" height="150" resize>
   </a>
 
   <h3 align="center">SoundTown</h3>
@@ -80,12 +80,16 @@ To get a local copy up and running follow these simple steps.
    ```sh
    yarn install
    ```
-
-
+4. Copy .env.example into new .env.local and enter environment variables
+5. Run app
+   ```sh
+   yarn start
+   ```
 
 <!-- DEPLOYMENT EXAMPLES -->
 ## Deployment
 
+Deployed through GitHub Actions on Azure Static Web App
 
 <!-- CONTRIBUTING -->
 ## Contributing
