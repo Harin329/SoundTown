@@ -9,6 +9,8 @@ import {
   Space,
   Image,
   message,
+  Modal,
+  List,
 } from "antd";
 import "./index.css";
 import { useHistory } from "react-router-dom";
@@ -86,6 +88,7 @@ export default function Room() {
   const [queueEntry, setQueueEntry] = useState("");
   const [firstLoad, setFirstLoad] = useState(true);
   const [initialLoad, setInitialLoad] = useState(false);
+  const [more, setMore] = useState(false);
   const token = useSelector(selectAccessToken);
   const displayName = useSelector(selectDisplayName);
   const userID = useSelector(selectUID);
@@ -389,7 +392,7 @@ export default function Room() {
             },
           }).then(() => {
             setListener([]);
-          })
+          });
         }
       })
       .catch((err) => {
@@ -930,12 +933,16 @@ export default function Room() {
               })}
               {searchResult !== undefined && searchResult.length >= 8 && (
                 <Col
+                  className="resultBlock"
                   style={{
                     width: "25%",
                     height: 250,
                     alignItems: "start",
                     display: "flex",
                     flexDirection: "column",
+                  }}
+                  onClick={() => {
+                    setMore(!more);
                   }}
                 >
                   <Col
@@ -1093,6 +1100,83 @@ export default function Room() {
             })}
         </Col>
       </Row>
+      {more && (
+        <Modal
+          title="Search Results"
+          centered
+          visible={more}
+          width={'80%'}
+          onCancel={() => setMore(false)}
+          bodyStyle={{backgroundColor: "#0A3E03"}}
+          maskStyle={{backgroundColor: 'black', opacity: 0.8}}
+          footer={null}
+        >
+          <List
+            grid={{
+              gutter: 16,
+              xs: 0,
+              sm: 0,
+              md: 0,
+              lg: 0,
+              xl: 0,
+              xxl: 7,
+            }}
+            dataSource={searchResult}
+            renderItem={(res) => (
+              <List.Item>
+                <Col
+                  className="resultBlock"
+                  key={res.id}
+                  style={{
+                    width: "25%",
+                    height: 250,
+                    alignItems: "start",
+                    display: "flex",
+                    flexDirection: "column",
+                  }}
+                  onClick={() => {
+                    setQueuedSong(res);
+                    setMore(false);
+                  }}
+                >
+                  <Image
+                    style={{
+                      width: 150,
+                      height: 150,
+                      objectFit: "cover",
+                      borderRadius: 10,
+                    }}
+                    alt="example"
+                    src={res.album.images[0].url}
+                    preview={false}
+                  />
+                  <Text
+                    className="resultName"
+                    style={{
+                      color: "white",
+                      fontSize: 18,
+                      textAlign: "start",
+                      width: 150,
+                    }}
+                  >
+                    {res.name}
+                  </Text>
+                  <Text
+                    style={{
+                      color: "white",
+                      fontSize: 14,
+                      textAlign: "start",
+                      width: 150,
+                    }}
+                  >
+                    {res.artists[0].name}
+                  </Text>
+                </Col>
+              </List.Item>
+            )}
+          />
+        </Modal>
+      )}
     </Space>
   );
 }
