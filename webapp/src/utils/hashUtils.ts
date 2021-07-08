@@ -16,5 +16,5 @@ export const removeHashParams = () => {
 }
 
 export const getHashID = () => {
-    return window.location.pathname.substring(1).split("/")[1];
+    return window.location.hash.split("/")[2];
 }

@@ -1,5 +1,5 @@
 import { FC } from "react";
-import { BrowserRouter as Router, Route } from "react-router-dom";
+import { HashRouter as Router, Route } from "react-router-dom";
 import CreateRoom from "./pages/createRoom";
 import Home from "./pages/home";
 import Room from "./pages/room";
