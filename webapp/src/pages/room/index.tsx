@@ -683,7 +683,7 @@ export default function Room() {
         </Col>
       </Row>
       <Row className="App-content">
-        <Col span={12}>
+        <Col span={10}>
           {nowPlaying !== undefined && nowRequest !== undefined && (
             <Col className="App-now-playing">
               <Row style={{ flex: 1, paddingBottom: 10 }}>
@@ -867,7 +867,7 @@ export default function Room() {
             )}
           </Row>
         </Col>
-        <Col className="App-request" span={12}>
+        <Col className="App-request" span={14}>
           {!queuedSong && (
             <Row style={{ flex: 1, paddingBottom: 10, marginLeft: 30 }}>
               <Title level={5} style={{ color: "white" }}>

@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { Typography, Row, Button, Image, Space } from "antd";
+import { Typography, Row, Button, Image, Space, message } from "antd";
 import { useHistory } from "react-router-dom";
 import "./index.css";
 import { getHashParams, removeHashParams } from "../../utils/hashUtils";
@@ -32,6 +32,8 @@ export default function Home() {
   const isLoggedIn = useSelector(selectIsLoggedIn);
   const dispatch = useDispatch();
   const history = useHistory();
+  const client = new SpotifyWebApi();
+  client.setAccessToken(access_token);
 
   const { loading, data } = useQuery(GET_ANY_ROOM);
 
@@ -41,21 +43,26 @@ export default function Home() {
       dispatch(setAccessToken(access_token));
       dispatch(setTokenExpiryDate(Number(expires_in)));
 
-      const client = new SpotifyWebApi();
-      client.setAccessToken(access_token);
-      client.getMe().then((res) => {
-        dispatch(setDisplayName(res.display_name!))
-        dispatch(setUID(res.id))
+      client
+        .getMe()
+        .then((res) => {
+          dispatch(setDisplayName(res.display_name!));
+          dispatch(setUID(res.id));
 
-        if (res.images !== undefined && res.images.length > 0) {
-          dispatch(setImageURI(res.images![0].url))
-        }
-      })
+          if (res.images !== undefined && res.images.length > 0) {
+            dispatch(setImageURI(res.images![0].url));
+          }
+        })
+        .catch((err) => {
+          console.log(err);
+          message.info("User is not authorized to use SoundTown!");
+          dispatch(setLoggedIn(false));
+        });
     }
   });
 
   useEffect(() => {
-    const ID = localStorage.getItem('roomID');
+    const ID = localStorage.getItem("roomID");
 
     if (ID) {
       joinRoom(ID);
