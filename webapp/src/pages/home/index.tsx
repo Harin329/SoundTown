@@ -17,9 +17,7 @@ import { getAuthorizeHref } from "../../oauthConfig";
 import logo from "../../images/logo.png";
 import create from "../../images/create.png";
 import join from "../../images/join.png";
-import { useQuery } from "@apollo/client";
 import { setRoomID } from "../../reducer/roomReducer";
-import { GET_ANY_ROOM } from "../../query/room";
 import SpotifyWebApi from "spotify-web-api-js";
 
 const hashParams = getHashParams();
@@ -34,8 +32,6 @@ export default function Home() {
   const history = useHistory();
   const client = new SpotifyWebApi();
   client.setAccessToken(access_token);
-
-  const { loading, data } = useQuery(GET_ANY_ROOM);
 
   useEffect(() => {
     if (access_token) {
@@ -55,6 +51,7 @@ export default function Home() {
         })
         .catch((err) => {
           console.log(err);
+          message.config({ maxCount: 1 });
           message.info("User is not authorized to use SoundTown!");
           dispatch(setLoggedIn(false));
         });
@@ -78,10 +75,12 @@ export default function Home() {
   };
 
   const joinRoom = (roomID: string) => {
-    if (!loading) {
-      dispatch(setRoomID(roomID));
-      history.push("/room/" + roomID);
-    }
+    dispatch(setRoomID(roomID));
+    history.push("/room/" + roomID);
+  };
+
+  const browseRoom = () => {
+    history.push("/joinRoom");
   };
 
   return (
@@ -120,7 +119,7 @@ export default function Home() {
               type="primary"
               shape="round"
               icon={<Image src={join} width={50} preview={false} />}
-              onClick={() => joinRoom(data.rooms[0]._id)}
+              onClick={() => browseRoom()}
             >
               Join a Room
             </Button>

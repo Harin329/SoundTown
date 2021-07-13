@@ -4,9 +4,8 @@ export const CREATE_ROOM = gql`
   mutation CreateRoom(
     $name: String!
     $creator: String!
-    $admin: String
+    $admin: [String]
     $image_uri: String
-    $listeners: [String]
   ) {
     insertOneRoom(
       data: {
@@ -14,7 +13,6 @@ export const CREATE_ROOM = gql`
         creator: $creator
         admin: $admin
         image_uri: $image_uri
-        listeners: $listeners
       }
     ) {
       _id
@@ -22,7 +20,6 @@ export const CREATE_ROOM = gql`
       creator
       admin
       image_uri
-      listeners
     }
   }
 `;
@@ -34,7 +31,6 @@ export const NOW_PLAYING = gql`
       admin
       creator
       image_uri
-      listeners
       name
       now_playing {
         _id
@@ -53,7 +49,6 @@ export const NONE_PLAYING = gql`
       admin
       creator
       image_uri
-      listeners
       name
       now_playing {
         _id
@@ -72,7 +67,6 @@ export const GET_ROOM = gql`
       admin
       creator
       image_uri
-      listeners
       name
       now_playing {
         _id
@@ -86,8 +80,18 @@ export const GET_ROOM = gql`
 
 export const GET_ANY_ROOM = gql`
   query {
-    rooms(sortBy: NAME_DESC, limit: 1) {
+    rooms(sortBy: NAME_DESC, limit: 5) {
       _id
+      admin
+      creator
+      image_uri
+      name
+      now_playing {
+        _id
+        creator
+        message
+        song
+      }
     }
   }
 `;

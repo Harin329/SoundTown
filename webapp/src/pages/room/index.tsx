@@ -128,14 +128,13 @@ export default function Room() {
     loading: queueLoading,
     data: queue,
     refetch: refetchQueue,
-    stopPolling: stopQueueRefetch,
   } = useQuery(GET_QUEUE, {
     variables: {
       id: {
         _id: roomID,
       },
     },
-    pollInterval: 1000,
+    pollInterval: 5000,
   });
   const [createRequest] = useMutation(CREATE_REQUEST);
   const [playRequest] = useMutation(PLAY_REQUEST);
@@ -146,7 +145,7 @@ export default function Room() {
 
   useEffect(() => {
     if (!loading) {
-      if (!token) {
+      if (!token || data === undefined) {
         localStorage.setItem("roomID", getHashID());
         window.open(getAuthorizeHref(), "_self");
       } else {
@@ -170,7 +169,6 @@ export default function Room() {
           console.log(res.data);
           setListener(res.data.users);
           if (res.data.users.length === 0 || res.data.users[0].id === userID) {
-            stopQueueRefetch();
             createUser({
               variables: {
                 id: userID,
@@ -190,7 +188,6 @@ export default function Room() {
           console.log(err);
         });
     } else {
-      stopQueueRefetch();
       createUser({
         variables: {
           id: userID,
@@ -226,7 +223,6 @@ export default function Room() {
                   const song = reqRes.data.request.song.split(":")[2];
                   if (song === currentSong) {
                     spotifyClient.getTrack(song).then((songObj) => {
-                      stopQueueRefetch();
                       setPaused(false);
                       setNowPlaying(songObj);
                       setMessage(reqRes.data.request.message);
@@ -270,7 +266,6 @@ export default function Room() {
         queueEntry !== queue.requests[0]._id &&
         firstLoad
       ) {
-        stopQueueRefetch();
         setFirstLoad(false);
         createUser({
           variables: {
@@ -546,7 +541,6 @@ export default function Room() {
                     const song = reqRes.data.request.song.split(":")[2];
                     if (song === currentSong) {
                       spotifyClient.getTrack(song).then((songObj) => {
-                        stopQueueRefetch();
                         setPaused(false);
                         setNowPlaying(songObj);
                         setMessage(reqRes.data.request.message);

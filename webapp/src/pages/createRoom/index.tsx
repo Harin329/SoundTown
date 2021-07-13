@@ -5,12 +5,15 @@ import { useHistory } from "react-router-dom";
 import { useMutation } from "@apollo/client";
 import { CREATE_ROOM } from "../../query/room";
 import { setRoomID } from "../../reducer/roomReducer";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+import { selectImageURI, selectUID } from "../../reducer/authReducer";
 
 export default function CreateRoom() {
   const history = useHistory();
   const dispatch = useDispatch();
   const [roomName, setRoomName] = useState("");
+  const userID = useSelector(selectUID);
+  const userImg = useSelector(selectImageURI);
 
   const editName = (e: React.ChangeEvent<HTMLInputElement>) => {
     setRoomName(e.target.value);
@@ -23,10 +26,9 @@ export default function CreateRoom() {
     createRoom({
       variables: {
         name: roomName,
-        creator: "",
-        admin: "",
-        image_uri: "",
-        listeners: [],
+        creator: userID,
+        admin: [userID],
+        image_uri: userImg,
       },
     }).then((res) => {
       // Get Created Room ID
