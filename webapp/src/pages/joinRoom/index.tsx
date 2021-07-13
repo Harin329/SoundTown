@@ -2,7 +2,6 @@ import { useDispatch } from "react-redux";
 import { Typography, Row, Button, Image, Space } from "antd";
 import { useHistory } from "react-router-dom";
 import "./index.css";
-import join from "../../images/join.png";
 import { useQuery } from "@apollo/client";
 import { setRoomID } from "../../reducer/roomReducer";
 import { GET_ANY_ROOM } from "../../query/room";
