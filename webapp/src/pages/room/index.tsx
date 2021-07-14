@@ -1,17 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
-import { useSelector } from "react-redux";
-import {
-  Typography,
-  Row,
-  Col,
-  Input,
-  Button,
-  Space,
-  Image,
-  message,
-  Modal,
-  List,
-} from "antd";
+import { useDispatch, useSelector } from "react-redux";
+import { Typography, Row, Col, Space, Image, message } from "antd";
 import "./index.css";
 import { useHistory } from "react-router-dom";
 import back from "../../images/back.png";
@@ -20,7 +9,6 @@ import share from "../../images/share.png";
 import logo from "../../images/logo.png";
 import play from "../../images/play.png";
 import pause from "../../images/pause.png";
-import close from "../../images/close.png";
 import { useMutation, useQuery } from "@apollo/client";
 import SpotifyWebApi from "spotify-web-api-js";
 import {
@@ -30,7 +18,19 @@ import {
   selectUID,
 } from "../../reducer/authReducer";
 import { GET_ROOM, NONE_PLAYING, NOW_PLAYING } from "../../query/room";
-import { selectRoomID } from "../../reducer/roomReducer";
+import {
+  isRoomPaused,
+  selectNowPlaying,
+  selectNowRequest,
+  selectRoomID,
+  selectRoomListeners,
+  selectRoomObj,
+  setListeners,
+  setNowPlaying,
+  setNowRequest,
+  setPaused,
+  setRoomObj,
+} from "../../reducer/roomReducer";
 import {
   CREATE_REQUEST,
   GET_QUEUE,
@@ -46,59 +46,33 @@ import {
 } from "../../query/user";
 import { getHashID } from "../../utils/hashUtils";
 import { getAuthorizeHref } from "../../oauthConfig";
+import Search from "../../components/search";
 
-interface Request {
-  _id: string;
-  song: string;
-  song_name: string;
-  creator: string;
-  creator_name: string;
-  creator_uri: string;
-  image_uri: string;
-  message: string;
-  room_id?: any;
-}
-
-interface User {
-  _id: string;
-  id: string;
-  current_room: string;
-  user_image: string;
-  user_name: string;
-}
+export const timeouts: NodeJS.Timeout[] = [];
 
 export default function Room() {
   const { Title, Text } = Typography;
-  const { TextArea } = Input;
   const history = useHistory();
-  const [roomObj, setRoomObj] = useState();
-  const [roomName, setRoomName] = useState("");
-  const [roomImage, setRoomImage] = useState("");
-  const [nowPlaying, setNowPlaying] = useState<SpotifyApi.TrackObjectFull>();
-  const [nowRequest, setNowRequest] = useState<Request>();
-  const [songMessage, setMessage] = useState("");
-  const [paused, setPaused] = useState(true);
-  const [listeners, setListener] = useState<User[]>([]);
-  const [searchResult, setSearchResult] = useState<
-    SpotifyApi.TrackObjectFull[] | undefined
-  >([]);
-  const [queuedSong, setQueuedSong] = useState<SpotifyApi.TrackObjectFull>();
-  const [query, setQuery] = useState("");
-  const [queueMessage, setQueueMessage] = useState("");
+  const dispatch = useDispatch();
   const [queueEntry, setQueueEntry] = useState("");
   const [firstLoad, setFirstLoad] = useState(true);
   const [initialLoad, setInitialLoad] = useState(false);
-  const [more, setMore] = useState(false);
+
   const token = useSelector(selectAccessToken);
   const displayName = useSelector(selectDisplayName);
   const userID = useSelector(selectUID);
   const user_image = useSelector(selectImageURI);
+  const paused = useSelector(isRoomPaused);
+  const roomObj = useSelector(selectRoomObj);
+  const nowPlaying = useSelector(selectNowPlaying);
+  const nowRequest = useSelector(selectNowRequest);
+  const listeners = useSelector(selectRoomListeners);
+
   const spotifyClient = useMemo(() => {
     const client = new SpotifyWebApi();
     client.setAccessToken(token);
     return client;
   }, [token]);
-  const timeouts: NodeJS.Timeout[] = [];
 
   document.body.style.overflow = "hidden";
 
@@ -150,15 +124,13 @@ export default function Room() {
         localStorage.setItem("roomID", getHashID());
         window.open(getAuthorizeHref(), "_self");
       } else {
-        setRoomObj(data.room._id);
-        setRoomName(data.room.name);
-        setRoomImage(data.room.image_uri);
+        dispatch(setRoomObj(data.room));
       }
     }
     if (error) {
       console.log(error);
     }
-  }, [data, error, loading, token]);
+  }, [data, dispatch, error, loading, token]);
 
   const soloUser = (d: any) => {
     console.log(d);
@@ -168,7 +140,7 @@ export default function Room() {
       })
         .then((res) => {
           console.log(res.data);
-          setListener(res.data.users);
+          dispatch(setListeners(res.data.users));
           if (res.data.users.length === 0 || res.data.users[0].id === userID) {
             createUser({
               variables: {
@@ -206,15 +178,14 @@ export default function Room() {
   // Poll Until Ready to Play New Song
   useEffect(() => {
     if (!queueLoading && !loading && !initialLoad && !currentUserLoading) {
-      console.log(queueEntry);
       if (queueEntry === "") {
         spotifyClient
           .getMyCurrentPlayingTrack()
           .then((res) => {
             const currentSong = res.item?.id;
-            console.log(currentUser.user);
             if (
               currentUser.user.current_room !== undefined &&
+              currentUser.user.current_room !== null &&
               currentUser.user.current_room.split("_").length >= 1
             ) {
               const currentUserRequest =
@@ -229,16 +200,15 @@ export default function Room() {
                     data.room.now_playing !== null
                   ) {
                     spotifyClient.getTrack(song).then((songObj) => {
-                      setPaused(false);
-                      setNowPlaying(songObj);
-                      setMessage(reqRes.data.request.message);
-                      setNowRequest(reqRes.data.request);
+                      dispatch(setPaused(false));
+                      dispatch(setNowPlaying(songObj));
+                      dispatch(setNowRequest(reqRes.data.request));
                       setFirstLoad(false);
                       refetchListeners({
                         current_room: roomID + "_" + data.room.now_playing._id,
                       }).then((res) => {
                         console.log(res.data);
-                        setListener(res.data.users);
+                        dispatch(setListeners(res.data.users));
                       });
                       const time = setTimeout(() => {
                         playNext(false, 500);
@@ -289,33 +259,8 @@ export default function Room() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [queue, queueLoading, loading, initialLoad, currentUserLoading]);
 
-  // Used to lazy search songs
-  useEffect(() => {
-    const searchSong = (e: string) => {
-      if (e !== "") {
-        spotifyClient
-          .search(e, ["track"])
-          .then((res) => {
-            const results = res.tracks?.items.sort(
-              (a, b) => b.popularity - a.popularity
-            );
-            setSearchResult(results);
-          })
-          .catch((err) => {
-            console.log(err);
-          });
-      }
-    };
-
-    const timeout_id = setTimeout(() => {
-      searchSong(query);
-    }, 1000);
-
-    return () => clearTimeout(timeout_id);
-  }, [query, spotifyClient]);
-
   const followAdmin = () => {
-    if (roomObj !== undefined && refetchListeners !== undefined) {
+    if (roomObj?._id !== undefined && refetchListeners !== undefined) {
       spotifyClient.getMyCurrentPlayingTrack().then((res) => {
         const currentSong = res.item;
         createRequest({
@@ -328,16 +273,15 @@ export default function Room() {
             image_uri: currentSong?.album.images[0].url,
             message: "",
             room_id: {
-              link: roomObj,
+              link: roomObj._id,
             },
           },
         })
           .then((res) => {
             const next = res.data.insertOneRequest;
-            setPaused(false);
-            setNowPlaying(currentSong!);
-            setMessage("");
-            setNowRequest(next);
+            dispatch(setPaused(false));
+            dispatch(setNowPlaying(currentSong!));
+            dispatch(setNowRequest(next));
             keepUser({
               variables: {
                 id: userID,
@@ -360,18 +304,16 @@ export default function Room() {
                       },
                     });
                   }
-                  refetchQueue();
                   refetchListeners({
                     current_room: roomID + "_" + next._id,
                   })
                     .then((res) => {
                       console.log(res.data.users);
-                      setListener(res.data.users);
-
+                      dispatch(setListeners(res.data.users));
                       const time = setTimeout(() => {
                         playNext(false, 500);
                         console.log("playing next!");
-                      }, currentSong?.duration_ms! - 5000);
+                      }, currentSong?.duration_ms!);
                       timeouts.push(time);
                     })
                     .catch((err) => {
@@ -407,10 +349,9 @@ export default function Room() {
                   if (skip) {
                     spotifyClient.skipToNext();
                   }
-                  setPaused(false);
-                  setNowPlaying(songObj);
-                  setMessage(next.message);
-                  setNowRequest(next);
+                  dispatch(setPaused(false));
+                  dispatch(setNowPlaying(songObj));
+                  dispatch(setNowRequest(next));
                   keepUser({
                     variables: {
                       id: userID,
@@ -437,8 +378,7 @@ export default function Room() {
                         current_room: roomID + "_" + next._id,
                       }).then((res) => {
                         console.log(res.data.users);
-                        setListener(res.data.users);
-
+                        dispatch(setListeners(res.data.users));
                         const time = setTimeout(() => {
                           playNext(false, 500);
                           console.log("playing next!");
@@ -460,148 +400,25 @@ export default function Room() {
             followAdmin();
           } else {
             console.log("nothing else to play");
-            setPaused(true);
-            setNowPlaying(undefined);
-            setMessage("");
-            setNowRequest(undefined);
+            dispatch(setPaused(true));
+            dispatch(setNowPlaying(undefined));
+            dispatch(setNowRequest(undefined));
             mutateNonePlaying({
               variables: {
                 id: roomID,
               },
             }).then(() => {
-              setListener([]);
+              dispatch(setListeners([]));
             });
           }
         }
       })
       .catch((err) => {
         console.log(err);
-        setPaused(true);
-        setNowPlaying(undefined);
-        setMessage("");
-        setNowRequest(undefined);
+        dispatch(setPaused(true));
+        dispatch(setNowPlaying(undefined));
+        dispatch(setNowRequest(undefined));
       });
-  };
-
-  const playNow = (
-    songObj: SpotifyApi.TrackObjectFull | undefined,
-    requestObj: any
-  ) => {
-    setFirstLoad(false);
-    spotifyClient.getMyCurrentPlaybackState().then((state) => {
-      if (state.is_playing) {
-        spotifyClient
-          .queue(songObj!.uri)
-          .then(() => {
-            setPaused(false);
-            setNowPlaying(songObj);
-            setMessage(requestObj.message);
-            setNowRequest(requestObj);
-            keepUser({
-              variables: {
-                id: userID,
-                current_room: roomID + "_" + requestObj._id,
-              },
-            }).then((res) => {
-              console.log(res);
-              playRequest({
-                variables: {
-                  id: requestObj._id,
-                },
-              }).then(() => {
-                if (true) {
-                  mutateNowPlaying({
-                    variables: {
-                      id: roomID,
-                      now_playing: {
-                        link: requestObj._id,
-                      },
-                    },
-                  }).then(() => {
-                    refetchListeners({
-                      current_room: roomID + "_" + requestObj._id,
-                    }).then((u) => {
-                      console.log(u.data.users);
-                      setListener(u.data.users);
-                    });
-                  });
-                }
-                refetchQueue();
-                spotifyClient.skipToNext();
-              });
-
-              const time = setTimeout(() => {
-                playNext(false, 500);
-                console.log("playing next!");
-              }, songObj?.duration_ms! - 5000);
-              timeouts.push(time);
-            });
-          })
-          .catch((err) => {
-            console.log(err);
-            message.info(
-              "Please start playing music on a spotify connected device first!"
-            );
-          });
-      } else {
-        spotifyClient
-          .play()
-          .then(() => {
-            spotifyClient
-              .queue(songObj!.uri)
-              .then(() => {
-                setPaused(false);
-                setNowPlaying(songObj);
-                setMessage(requestObj.message);
-                setNowRequest(requestObj);
-                keepUser({
-                  variables: {
-                    id: userID,
-                    current_room: roomID + "_" + requestObj._id,
-                  },
-                }).then((res) => {
-                  console.log(res);
-                  playRequest({
-                    variables: {
-                      id: requestObj._id,
-                    },
-                  }).then(() => {
-                    if (true) {
-                      mutateNowPlaying({
-                        variables: {
-                          id: roomID,
-                          now_playing: {
-                            link: requestObj._id,
-                          },
-                        },
-                      });
-                    }
-                    refetchQueue();
-                  });
-                  spotifyClient.skipToNext();
-
-                  const time = setTimeout(() => {
-                    playNext(false, 500);
-                    console.log("playing next!");
-                  }, songObj?.duration_ms! - 5000);
-                  timeouts.push(time);
-                });
-              })
-              .catch((err) => {
-                console.log(err);
-                message.info(
-                  "Please start playing music on a spotify connected device first!"
-                );
-              });
-          })
-          .catch((err) => {
-            console.log(err);
-            message.info(
-              "Please start playing music on a spotify connected device first!"
-            );
-          });
-      }
-    });
   };
 
   const togglePause = () => {
@@ -609,7 +426,7 @@ export default function Room() {
       spotifyClient
         .play()
         .then(() => {
-          setPaused(false);
+          dispatch(setPaused(false));
           spotifyClient
             .getMyCurrentPlayingTrack()
             .then((res) => {
@@ -625,10 +442,9 @@ export default function Room() {
                     const song = reqRes.data.request.song.split(":")[2];
                     if (song === currentSong) {
                       spotifyClient.getTrack(song).then((songObj) => {
-                        setPaused(false);
-                        setNowPlaying(songObj);
-                        setMessage(reqRes.data.request.message);
-                        setNowRequest(reqRes.data.request);
+                        dispatch(setPaused(false));
+                        dispatch(setNowPlaying(songObj));
+                        dispatch(setNowRequest(reqRes.data.request));
                         const time = setTimeout(() => {
                           playNext(false, 500);
                           console.log("playing next!");
@@ -660,7 +476,7 @@ export default function Room() {
       spotifyClient
         .pause()
         .then(() => {
-          setPaused(true);
+          dispatch(setPaused(true));
           timeouts.forEach((time) => {
             clearTimeout(time);
           });
@@ -671,42 +487,6 @@ export default function Room() {
           );
         });
     }
-  };
-
-  const queueSong = () => {
-    // Create Request in Mongo
-    createRequest({
-      variables: {
-        song: queuedSong?.uri,
-        song_name: queuedSong?.name,
-        creator: userID,
-        creator_name: displayName,
-        creator_uri: user_image,
-        image_uri: queuedSong?.album.images[0].url,
-        message: queueMessage,
-        room_id: {
-          link: roomObj,
-        },
-      },
-    })
-      .then((res) => {
-        // Get Created Request ID
-        // const requestID = res.data.insertOneRequest._id;
-        // console.log(requestID);
-
-        console.log(nowPlaying);
-        if (!nowPlaying) {
-          playNow(queuedSong, res.data.insertOneRequest);
-        } else {
-          refetchQueue();
-        }
-
-        setQueuedSong(undefined);
-        setQueueMessage("");
-      })
-      .catch((err) => {
-        message.error(err);
-      });
   };
 
   return (
@@ -724,9 +504,9 @@ export default function Room() {
             }}
           />
           <Image
-            src={roomImage !== "" ? roomImage : logo}
+            src={roomObj?.image_uri !== "" ? roomObj?.image_uri : logo}
             className="room-image"
-            alt={roomName}
+            alt={roomObj?.name}
             preview={false}
           />
           <Text
@@ -736,7 +516,7 @@ export default function Room() {
               fontFamily: "Gotham-Medium",
             }}
           >
-            {roomName}
+            {roomObj?.name}
           </Text>
         </Col>
         <Col className="App-header-right">
@@ -803,7 +583,7 @@ export default function Room() {
                     className="song-message"
                     style={{ color: "white", fontSize: 20 }}
                   >
-                    {songMessage}
+                    {nowRequest.message}
                   </Text>
                 </Col>
               </Row>
@@ -950,202 +730,7 @@ export default function Room() {
             )}
           </Row>
         </Col>
-        <Col className="App-request" span={14}>
-          {!queuedSong && (
-            <Row style={{ flex: 1, paddingBottom: 10, marginLeft: 30 }}>
-              <Title level={5} style={{ color: "white" }}>
-                Request a Song
-              </Title>
-              <Input
-                placeholder="Search"
-                onChange={(text) => {
-                  setQuery(text.target.value);
-                }}
-                style={{ marginBottom: 20, width: "95%" }}
-              />
-              {searchResult?.slice(0, 7).map((res) => {
-                return (
-                  <Col
-                    className="resultBlock"
-                    key={res.id}
-                    style={{
-                      width: "25%",
-                      height: 250,
-                      alignItems: "start",
-                      display: "flex",
-                      flexDirection: "column",
-                    }}
-                    onClick={() => {
-                      setQueuedSong(res);
-                    }}
-                  >
-                    <Image
-                      style={{
-                        width: 150,
-                        height: 150,
-                        objectFit: "cover",
-                        borderRadius: 10,
-                      }}
-                      alt="example"
-                      src={res.album.images[0].url}
-                      preview={false}
-                    />
-                    <Text
-                      className="resultName"
-                      style={{
-                        color: "white",
-                        fontSize: 18,
-                        textAlign: "start",
-                        width: 150,
-                      }}
-                    >
-                      {res.name}
-                    </Text>
-                    <Text
-                      style={{
-                        color: "white",
-                        fontSize: 14,
-                        textAlign: "start",
-                        width: 150,
-                      }}
-                    >
-                      {res.artists[0].name}
-                    </Text>
-                  </Col>
-                );
-              })}
-              {searchResult !== undefined && searchResult.length >= 8 && (
-                <Col
-                  className="resultBlock"
-                  style={{
-                    width: "25%",
-                    height: 250,
-                    alignItems: "start",
-                    display: "flex",
-                    flexDirection: "column",
-                  }}
-                  onClick={() => {
-                    setMore(!more);
-                  }}
-                >
-                  <Col
-                    style={{
-                      fontSize: 18,
-                      textAlign: "start",
-                      width: 150,
-                      height: 150,
-                      backgroundColor: "black",
-                      borderRadius: 10,
-                      justifyContent: "center",
-                      display: "flex",
-                      alignItems: "center",
-                    }}
-                  >
-                    <Text
-                      style={{
-                        color: "white",
-                        fontSize: 18,
-                        textAlign: "start",
-                      }}
-                    >
-                      See More
-                    </Text>
-                  </Col>
-                </Col>
-              )}
-            </Row>
-          )}
-          {queuedSong && (
-            <Col
-              style={{
-                flex: 1,
-                paddingBottom: 10,
-                marginLeft: 30,
-                display: "flex",
-                flexDirection: "column",
-              }}
-            >
-              <Row>
-                <Title level={5} style={{ color: "white" }}>
-                  Include a Message
-                </Title>
-              </Row>
-              <Row
-                align="middle"
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                }}
-              >
-                <Row>
-                  <Image
-                    src={queuedSong.album.images[0].url}
-                    className="selected-image"
-                    alt={roomName}
-                    preview={false}
-                  />
-                  <Col>
-                    <Row>
-                      <Title
-                        level={5}
-                        style={{
-                          color: "white",
-                          marginTop: 10,
-                        }}
-                      >
-                        {queuedSong.name}
-                      </Title>
-                    </Row>
-                    <Row>
-                      <Text
-                        style={{
-                          color: "white",
-                          fontSize: 14,
-                        }}
-                      >
-                        {queuedSong.artists[0].name}
-                      </Text>
-                    </Row>
-                  </Col>
-                </Row>
-                <Image
-                  className="image-button"
-                  src={close}
-                  style={{ width: 30, height: 30 }}
-                  alt={"Close"}
-                  preview={false}
-                  onClick={() => {
-                    setQueuedSong(undefined);
-                  }}
-                />
-              </Row>
-              <TextArea
-                placeholder="Write a message..."
-                rows={8}
-                value={queueMessage}
-                onChange={(text) => {
-                  setQueueMessage(text.target.value);
-                }}
-                style={{ marginTop: 20, width: "100%" }}
-              />
-              <Button
-                className="button"
-                type="primary"
-                shape="round"
-                size="large"
-                style={{
-                  marginTop: 20,
-                  alignSelf: "flex-end",
-                  justifySelf: "flex-end",
-                }}
-                onClick={queueSong}
-              >
-                Queue Song
-              </Button>
-            </Col>
-          )}
-        </Col>
+        {Search(spotifyClient, playNext)}
       </Row>
       <Row className="App-footer">
         <Title level={5} style={{ color: "white" }}>
@@ -1183,83 +768,6 @@ export default function Room() {
             })}
         </Col>
       </Row>
-      {more && (
-        <Modal
-          title="Search Results"
-          centered
-          visible={more}
-          width={"80%"}
-          onCancel={() => setMore(false)}
-          bodyStyle={{ backgroundColor: "#0A3E03" }}
-          maskStyle={{ backgroundColor: "black", opacity: 0.8 }}
-          footer={null}
-        >
-          <List
-            grid={{
-              gutter: 16,
-              xs: 0,
-              sm: 0,
-              md: 0,
-              lg: 0,
-              xl: 0,
-              xxl: 7,
-            }}
-            dataSource={searchResult}
-            renderItem={(res) => (
-              <List.Item>
-                <Col
-                  className="resultBlock"
-                  key={res.id}
-                  style={{
-                    width: "25%",
-                    height: 250,
-                    alignItems: "start",
-                    display: "flex",
-                    flexDirection: "column",
-                  }}
-                  onClick={() => {
-                    setQueuedSong(res);
-                    setMore(false);
-                  }}
-                >
-                  <Image
-                    style={{
-                      width: 150,
-                      height: 150,
-                      objectFit: "cover",
-                      borderRadius: 10,
-                    }}
-                    alt="example"
-                    src={res.album.images[0].url}
-                    preview={false}
-                  />
-                  <Text
-                    className="resultName"
-                    style={{
-                      color: "white",
-                      fontSize: 18,
-                      textAlign: "start",
-                      width: 150,
-                    }}
-                  >
-                    {res.name}
-                  </Text>
-                  <Text
-                    style={{
-                      color: "white",
-                      fontSize: 14,
-                      textAlign: "start",
-                      width: 150,
-                    }}
-                  >
-                    {res.artists[0].name}
-                  </Text>
-                </Col>
-              </List.Item>
-            )}
-          />
-        </Modal>
-      )}
     </Space>
   );
 }

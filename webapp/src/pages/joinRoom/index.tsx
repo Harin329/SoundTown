@@ -5,22 +5,7 @@ import "./index.css";
 import { useQuery } from "@apollo/client";
 import { setRoomID } from "../../reducer/roomReducer";
 import { GET_ANY_ROOM } from "../../query/room";
-
-interface NowPlaying {
-  _id: string;
-  creator: string;
-  message: string;
-  song: string;
-}
-
-interface Room {
-  _id: string;
-  admin: string;
-  creator: string;
-  image_uri: string;
-  name: string;
-  now_playing: NowPlaying;
-}
+import { Room } from "../../types";
 
 export default function JoinRoom() {
   const { Title } = Typography;
