@@ -43,6 +43,7 @@ export default function JoinRoom() {
         {!loading &&
           data.rooms.map((res: Room) => (
             <Button
+              key={res._id}
               className="button action-button"
               type="primary"
               shape="round"

@@ -143,6 +143,7 @@ export default function Room() {
   const [mutateNowPlaying] = useMutation(NOW_PLAYING);
   const [mutateNonePlaying] = useMutation(NONE_PLAYING);
 
+  // Setup Room
   useEffect(() => {
     if (!loading) {
       if (!token || data === undefined) {
@@ -221,7 +222,12 @@ export default function Room() {
               refetchRequest({ id: currentUserRequest })
                 .then((reqRes) => {
                   const song = reqRes.data.request.song.split(":")[2];
-                  if (song === currentSong) {
+                  console.log(data);
+                  if (
+                    song === currentSong &&
+                    data.room.now_playing !== undefined &&
+                    data.room.now_playing !== null
+                  ) {
                     spotifyClient.getTrack(song).then((songObj) => {
                       setPaused(false);
                       setNowPlaying(songObj);
@@ -308,6 +314,80 @@ export default function Room() {
     return () => clearTimeout(timeout_id);
   }, [query, spotifyClient]);
 
+  const followAdmin = () => {
+    if (roomObj !== undefined && refetchListeners !== undefined) {
+      spotifyClient.getMyCurrentPlayingTrack().then((res) => {
+        const currentSong = res.item;
+        createRequest({
+          variables: {
+            song: currentSong?.uri,
+            song_name: currentSong?.name,
+            creator: userID,
+            creator_name: displayName,
+            creator_uri: user_image,
+            image_uri: currentSong?.album.images[0].url,
+            message: "",
+            room_id: {
+              link: roomObj,
+            },
+          },
+        })
+          .then((res) => {
+            const next = res.data.insertOneRequest;
+            setPaused(false);
+            setNowPlaying(currentSong!);
+            setMessage("");
+            setNowRequest(next);
+            keepUser({
+              variables: {
+                id: userID,
+                current_room: roomID + "_" + next._id,
+              },
+            }).then(() => {
+              setTimeout(() => {
+                playRequest({
+                  variables: {
+                    id: next._id,
+                  },
+                }).then(() => {
+                  if (true) {
+                    mutateNowPlaying({
+                      variables: {
+                        id: roomID,
+                        now_playing: {
+                          link: next._id,
+                        },
+                      },
+                    });
+                  }
+                  refetchQueue();
+                  refetchListeners({
+                    current_room: roomID + "_" + next._id,
+                  })
+                    .then((res) => {
+                      console.log(res.data.users);
+                      setListener(res.data.users);
+
+                      const time = setTimeout(() => {
+                        playNext(false, 500);
+                        console.log("playing next!");
+                      }, currentSong?.duration_ms! - 5000);
+                      timeouts.push(time);
+                    })
+                    .catch((err) => {
+                      console.log(err);
+                    });
+                });
+              }, 10000);
+            });
+          })
+          .catch((err) => {
+            message.error(err);
+          });
+      });
+    }
+  };
+
   const playNext = (skip: boolean, timeout: number) => {
     refetch({
       id: {
@@ -376,18 +456,22 @@ export default function Room() {
               );
             });
         } else {
-          console.log("nothing else to play");
-          setPaused(true);
-          setNowPlaying(undefined);
-          setMessage("");
-          setNowRequest(undefined);
-          mutateNonePlaying({
-            variables: {
-              id: roomID,
-            },
-          }).then(() => {
-            setListener([]);
-          });
+          if (currentUser.user.id === data.room.creator) {
+            followAdmin();
+          } else {
+            console.log("nothing else to play");
+            setPaused(true);
+            setNowPlaying(undefined);
+            setMessage("");
+            setNowRequest(undefined);
+            mutateNonePlaying({
+              variables: {
+                id: roomID,
+              },
+            }).then(() => {
+              setListener([]);
+            });
+          }
         }
       })
       .catch((err) => {
@@ -661,6 +745,7 @@ export default function Room() {
             src={setting}
             alt="setting"
             preview={false}
+            hidden={true}
             onClick={() => {
               history.push("/");
             }}
@@ -671,7 +756,11 @@ export default function Room() {
             alt="share"
             preview={false}
             onClick={() => {
-              history.push("/");
+              navigator.clipboard
+                .writeText(window.location.toString())
+                .then(() => {
+                  message.info("Sharable Link Copied!");
+                });
             }}
           />
         </Col>
@@ -1099,10 +1188,10 @@ export default function Room() {
           title="Search Results"
           centered
           visible={more}
-          width={'80%'}
+          width={"80%"}
           onCancel={() => setMore(false)}
-          bodyStyle={{backgroundColor: "#0A3E03"}}
-          maskStyle={{backgroundColor: 'black', opacity: 0.8}}
+          bodyStyle={{ backgroundColor: "#0A3E03" }}
+          maskStyle={{ backgroundColor: "black", opacity: 0.8 }}
           footer={null}
         >
           <List

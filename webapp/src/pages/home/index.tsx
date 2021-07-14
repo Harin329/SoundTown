@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { Typography, Row, Button, Image, Space, message } from "antd";
 import { useHistory } from "react-router-dom";
@@ -30,8 +30,11 @@ export default function Home() {
   const isLoggedIn = useSelector(selectIsLoggedIn);
   const dispatch = useDispatch();
   const history = useHistory();
-  const client = new SpotifyWebApi();
-  client.setAccessToken(access_token);
+  const client = useMemo(() => {
+    const spotifyClient = new SpotifyWebApi();
+    spotifyClient.setAccessToken(access_token);
+    return spotifyClient;
+  }, []);
 
   useEffect(() => {
     if (access_token) {
@@ -56,7 +59,7 @@ export default function Home() {
           dispatch(setLoggedIn(false));
         });
     }
-  });
+  }, [client, dispatch]);
 
   useEffect(() => {
     const ID = localStorage.getItem("roomID");
