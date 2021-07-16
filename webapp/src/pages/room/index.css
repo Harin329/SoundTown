@@ -135,17 +135,3 @@
   background-color: #025034;
   color: white;
 }
-
-.App-footer {
-  height: 20vh;
-  width: 100vw;
-  display: flex;
-  padding: 20px;
-  padding-left: 3%;
-  padding-right: 3%;
-  flex: 1;
-  flex-direction: column;
-  font-size: calc(10px + 2vmin);
-  background-color: #000000;
-  color: white;
-}

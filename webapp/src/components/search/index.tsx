@@ -1,5 +1,14 @@
 import { useEffect, useState } from "react";
-import { Button, Col, Row, Typography, Input, Image, message, List } from "antd";
+import {
+  Button,
+  Col,
+  Row,
+  Typography,
+  Input,
+  Image,
+  message,
+  List,
+} from "antd";
 import "./index.css";
 import close from "../../images/close.png";
 import SpotifyWebApi from "spotify-web-api-js";
@@ -28,7 +37,10 @@ interface playNextFunc {
   (skip: boolean, timeout: number): void;
 }
 
-export default function Search(spotifyClient: SpotifyWebApi.SpotifyWebApiJs, playNext: playNextFunc) {
+export default function Search(
+  spotifyClient: SpotifyWebApi.SpotifyWebApiJs,
+  playNext: playNextFunc
+) {
   const { Title, Text } = Typography;
   const { TextArea } = Input;
   const dispatch = useDispatch();
@@ -97,9 +109,11 @@ export default function Search(spotifyClient: SpotifyWebApi.SpotifyWebApiJs, pla
                 current_room: roomObj?._id + "_" + requestObj._id,
               },
             }).then(() => {
+              const date = new Date();
               playRequest({
                 variables: {
                   id: requestObj._id,
+                  playedTime: date.toISOString(),
                 },
               }).then(() => {
                 mutateNowPlaying({
@@ -119,7 +133,7 @@ export default function Search(spotifyClient: SpotifyWebApi.SpotifyWebApiJs, pla
                 refetchQueue({
                   id: {
                     _id: roomObj?._id,
-                  }
+                  },
                 });
                 spotifyClient.skipToNext();
               });
@@ -154,9 +168,11 @@ export default function Search(spotifyClient: SpotifyWebApi.SpotifyWebApiJs, pla
                   },
                 }).then((res) => {
                   console.log(res);
+                  const date = new Date();
                   playRequest({
                     variables: {
                       id: requestObj._id,
+                      playedTime: date.toISOString(),
                     },
                   }).then(() => {
                     if (true) {
@@ -172,7 +188,7 @@ export default function Search(spotifyClient: SpotifyWebApi.SpotifyWebApiJs, pla
                     refetchQueue({
                       id: {
                         _id: roomObj?._id,
-                      }
+                      },
                     });
                   });
                   spotifyClient.skipToNext();
@@ -227,7 +243,7 @@ export default function Search(spotifyClient: SpotifyWebApi.SpotifyWebApiJs, pla
           refetchQueue({
             id: {
               _id: roomObj?._id,
-            }
+            },
           });
         }
 

@@ -33,6 +33,7 @@ export const CREATE_REQUEST = gql`
       image_uri
       message
       played
+      playedTime
       room_id {
         _id
       }
@@ -43,13 +44,15 @@ export const CREATE_REQUEST = gql`
 export const PLAY_REQUEST = gql`
   mutation PlayRequest(
     $id: ObjectId!
+    $playedTime: DateTime!
   ) {
     updateOneRequest(
       query: {
         _id: $id
       },
       set: {
-        played: true
+        played: true,
+        playedTime: $playedTime
       }
     ) {
       _id
@@ -61,6 +64,7 @@ export const PLAY_REQUEST = gql`
       image_uri
       message
       played
+      playedTime
       room_id {
         _id
       }
@@ -80,6 +84,7 @@ export const GET_REQUEST = gql`
       image_uri
       message
       played
+      playedTime
       room_id {
         _id
       }
@@ -99,6 +104,7 @@ export const GET_REQUEST_BY_ID = gql`
       image_uri
       message
       played
+      playedTime
       room_id {
         _id
       }
@@ -118,6 +124,7 @@ export const GET_QUEUE = gql`
       image_uri
       message
       played
+      playedTime
       room_id {
         _id
       }

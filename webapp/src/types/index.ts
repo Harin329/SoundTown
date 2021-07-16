@@ -9,6 +9,7 @@ export interface Request {
   message: string;
   room_id?: any;
   played: boolean;
+  playedTime: Date;
 }
 
 export interface Room {
