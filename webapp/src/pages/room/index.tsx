@@ -48,7 +48,7 @@ import { getHashID } from "../../utils/hashUtils";
 import { getAuthorizeHref } from "../../oauthConfig";
 import Search from "../../components/search";
 import Queue from "../../components/queue";
-import { Request, Room as r } from "../../types";
+import { Request } from "../../types";
 
 export const timeouts: NodeJS.Timeout[] = [];
 
