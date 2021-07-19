@@ -83,7 +83,11 @@ export default function Room() {
   });
   const { refetch: refetchListeners } = useQuery(GET_USER_IN_ROOM);
   const { refetch: refetchRequest } = useQuery(GET_REQUEST_BY_ID);
-  const { data: currentUser, refetch: refetchUser } = useQuery(GET_USER, {
+  const {
+    data: currentUser,
+    refetch: refetchUser,
+    loading: userLoading,
+  } = useQuery(GET_USER, {
     variables: {
       id: userID,
     },
@@ -149,7 +153,7 @@ export default function Room() {
                 const next = res.data.request as Request;
                 const startTime = new Date(next.playedTime);
                 const now = new Date();
-                const timeLeft = now.getTime() - startTime.getTime();
+                const timePlayed = now.getTime() - startTime.getTime();
 
                 spotifyClient
                   .queue(next.song)
@@ -157,7 +161,9 @@ export default function Room() {
                     spotifyClient
                       .getTrack(next.song.split(":")[2])
                       .then((songObj) => {
-                        spotifyClient.skipToNext();
+                        spotifyClient.skipToNext().then(() => {
+                          spotifyClient.seek(timePlayed);
+                        });
                         dispatch(setPaused(false));
                         dispatch(setNowPlaying(songObj));
                         dispatch(setNowRequest(next));
@@ -175,7 +181,7 @@ export default function Room() {
                             dispatch(setListeners(res.data.users));
                             const time = setTimeout(() => {
                               playNext(false, 500);
-                            }, timeLeft - 2000);
+                            }, songObj.duration_ms - timePlayed - 2000);
                             timeouts.push(time);
                           });
                         });
@@ -209,7 +215,7 @@ export default function Room() {
 
   // Play Music on Entry
   useEffect(() => {
-    if (roomObj !== undefined && !firstLoad) {
+    if (roomObj !== undefined && !userLoading && !firstLoad) {
       console.log("RUNNING 207 EFFECT");
       console.log(roomObj);
       setFirstLoad(true);
@@ -273,7 +279,7 @@ export default function Room() {
         });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [roomObj]);
+  }, [roomObj, userLoading]);
 
   const followAdmin = () => {
     console.log("RUNNING FOLLOW ADMIN");
@@ -382,14 +388,17 @@ export default function Room() {
                         current_room: roomID + "_" + next._id,
                       },
                     }).then(() => {
-                      const date = new Date();
-                      playRequest({
-                        variables: {
-                          id: next._id,
-                          playedTime: date.toISOString(),
-                        },
-                      }).then(() => {
-                        if (true) {
+                      if (
+                        currentUser.user !== undefined &&
+                        currentUser.user.id === data.room.creator
+                      ) {
+                        const date = new Date();
+                        playRequest({
+                          variables: {
+                            id: next._id,
+                            playedTime: date.toISOString(),
+                          },
+                        }).then(() => {
                           mutateNowPlaying({
                             variables: {
                               id: roomID,
@@ -398,18 +407,18 @@ export default function Room() {
                               },
                             },
                           });
-                        }
-                        refetchQueue();
-                        refetchListeners({
-                          current_room: roomID + "_" + next._id,
-                        }).then((res) => {
-                          console.log(res.data.users);
-                          dispatch(setListeners(res.data.users));
-                          const time = setTimeout(() => {
-                            playNext(false, 500);
-                          }, songObj?.duration_ms! - timeout - 2000);
-                          timeouts.push(time);
                         });
+                      }
+                      refetchQueue();
+                      refetchListeners({
+                        current_room: roomID + "_" + next._id,
+                      }).then((res) => {
+                        console.log(res.data.users);
+                        dispatch(setListeners(res.data.users));
+                        const time = setTimeout(() => {
+                          playNext(false, 500);
+                        }, songObj?.duration_ms! - timeout - 2000);
+                        timeouts.push(time);
                       });
                     });
                   });
@@ -422,7 +431,7 @@ export default function Room() {
               });
           } else {
             if (
-              currentUser !== undefined &&
+              currentUser.user !== undefined &&
               currentUser.user.id === data.room.creator
             ) {
               setTimeout(() => {
