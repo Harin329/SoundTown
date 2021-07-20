@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Typography, Row, Col, Space, Image, message } from "antd";
 import "./index.css";
@@ -53,6 +53,7 @@ export default function Room() {
   const history = useHistory();
   const dispatch = useDispatch();
   const [firstLoad, setFirstLoad] = useState(false);
+  let adminDelay = useRef(2000);
 
   const token = useSelector(selectAccessToken);
   const displayName = useSelector(selectDisplayName);
@@ -173,7 +174,7 @@ export default function Room() {
                             dispatch(setListeners(res.data.users));
                             const time = setTimeout(() => {
                               playNext(false, 500);
-                            }, songObj.duration_ms - timePlayed - 2000);
+                            }, songObj.duration_ms - timePlayed - 2000 + adminDelay.current);
                             timeouts.push(time);
                           });
                         });
@@ -217,6 +218,7 @@ export default function Room() {
           const currentSong = res.item?.id;
           refetchUser().then((cUser) => {
             console.log(cUser.data);
+            adminDelay.current = cUser.data.user.id === data.room.creator ? 0 : 2000
             if (
               cUser.data.user.current_room !== undefined &&
               cUser.data.user.current_room !== null &&
@@ -247,7 +249,7 @@ export default function Room() {
                       });
                       const time = setTimeout(() => {
                         playNext(false, 500);
-                      }, songObj?.duration_ms! - res.progress_ms! - 2000);
+                      }, songObj?.duration_ms! - res.progress_ms! - 2000 + adminDelay.current);
                       timeouts.push(time);
                     });
                   } else {
@@ -267,7 +269,6 @@ export default function Room() {
         })
         .catch((err) => {
           console.log(err);
-          soloUser();
         });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -331,7 +332,7 @@ export default function Room() {
 
                     const time = setTimeout(() => {
                       playNext(false, 500);
-                    }, currentSong?.duration_ms! - progress! - 2000);
+                    }, currentSong?.duration_ms! - progress! - 2000 + adminDelay.current);
                     timeouts.push(time);
                   })
                   .catch((err) => {
@@ -409,7 +410,7 @@ export default function Room() {
                         dispatch(setListeners(res.data.users));
                         const time = setTimeout(() => {
                           playNext(false, 500);
-                        }, songObj?.duration_ms! - timeout - 2000);
+                        }, songObj?.duration_ms! - timeout - 2000 + adminDelay.current);
                         timeouts.push(time);
                       });
                     });
