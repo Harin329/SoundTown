@@ -32,10 +32,7 @@ import { GET_USER_IN_ROOM, USER_STAY } from "../../query/user";
 import { NOW_PLAYING } from "../../query/room";
 import { timeouts } from "../../pages/room";
 import Modal from "antd/lib/modal/Modal";
-
-interface playNextFunc {
-  (skip: boolean, timeout: number): void;
-}
+import { playNextFunc } from "../../types";
 
 export default function Search(
   spotifyClient: SpotifyWebApi.SpotifyWebApiJs,

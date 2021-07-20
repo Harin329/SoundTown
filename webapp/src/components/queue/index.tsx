@@ -44,10 +44,11 @@ export default function Queue() {
                   preview={false}
                 />
                 <Title
+                  className="resultName"
                   level={5}
                   style={{
                     color: "white",
-                    marginTop: 10,
+                    width: 100,
                   }}
                 >
                   {res.song_name}

@@ -7,8 +7,7 @@ import back from "../../images/back.png";
 import setting from "../../images/setting.png";
 import share from "../../images/share.png";
 import logo from "../../images/logo.png";
-import play from "../../images/play.png";
-import pause from "../../images/pause.png";
+
 import { useMutation, useQuery } from "@apollo/client";
 import SpotifyWebApi from "spotify-web-api-js";
 import {
@@ -19,11 +18,7 @@ import {
 } from "../../reducer/authReducer";
 import { GET_ROOM, NONE_PLAYING, NOW_PLAYING } from "../../query/room";
 import {
-  isRoomPaused,
-  selectNowPlaying,
-  selectNowRequest,
   selectRoomID,
-  selectRoomListeners,
   selectRoomObj,
   setListeners,
   setNowPlaying,
@@ -49,11 +44,12 @@ import { getAuthorizeHref } from "../../oauthConfig";
 import Search from "../../components/search";
 import Queue from "../../components/queue";
 import { Request } from "../../types";
+import NowPlaying from "../../components/now-playing";
 
 export const timeouts: NodeJS.Timeout[] = [];
 
 export default function Room() {
-  const { Title, Text } = Typography;
+  const { Text } = Typography;
   const history = useHistory();
   const dispatch = useDispatch();
   const [firstLoad, setFirstLoad] = useState(false);
@@ -62,11 +58,7 @@ export default function Room() {
   const displayName = useSelector(selectDisplayName);
   const userID = useSelector(selectUID);
   const user_image = useSelector(selectImageURI);
-  const paused = useSelector(isRoomPaused);
   const roomObj = useSelector(selectRoomObj);
-  const nowPlaying = useSelector(selectNowPlaying);
-  const nowRequest = useSelector(selectNowRequest);
-  const listeners = useSelector(selectRoomListeners);
 
   const spotifyClient = useMemo(() => {
     const client = new SpotifyWebApi();
@@ -123,11 +115,11 @@ export default function Room() {
     }
   }, [data, dispatch, error, loading, token]);
 
-  const soloUser = (d: any) => {
+  const soloUser = () => {
     console.log("RUNNING SOLOUSER");
-    if (d.room.now_playing !== null) {
+    if (data.room.now_playing !== null) {
       const refetchNext = refetchListeners({
-        current_room: roomID + "_" + d.room.now_playing._id,
+        current_room: roomID + "_" + data.room.now_playing._id,
       });
       if (refetchNext) {
         refetchNext
@@ -149,7 +141,7 @@ export default function Room() {
               });
             } else {
               // Join in on current song
-              refetchRequest({ id: d.room.now_playing._id }).then((res) => {
+              refetchRequest({ id: data.room.now_playing._id }).then((res) => {
                 const next = res.data.request as Request;
                 const startTime = new Date(next.playedTime);
                 const now = new Date();
@@ -260,22 +252,22 @@ export default function Room() {
                     });
                   } else {
                     console.log("not current song");
-                    soloUser(data);
+                    soloUser();
                   }
                 })
                 .catch((err) => {
                   console.log(err);
-                  soloUser(data);
+                  soloUser();
                 });
             } else {
               console.log("Nothing Playing In Current Room.");
-              soloUser(data);
+              soloUser();
             }
           });
         })
         .catch((err) => {
           console.log(err);
-          soloUser(data);
+          soloUser();
         });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -461,76 +453,6 @@ export default function Room() {
     }
   };
 
-  const togglePause = () => {
-    if (paused) {
-      spotifyClient
-        .play()
-        .then(() => {
-          dispatch(setPaused(false));
-          spotifyClient
-            .getMyCurrentPlayingTrack()
-            .then((res) => {
-              const currentSong = res.item?.id;
-              if (
-                currentUser.user.current_room !== undefined &&
-                currentUser.user.current_room.split("_").length >= 1
-              ) {
-                const currentUserRequest =
-                  currentUser.user.current_room.split("_")[1];
-                const refetchNext = refetchRequest({ id: currentUserRequest });
-                if (refetchNext) {
-                  refetchNext
-                    .then((reqRes) => {
-                      const song = reqRes.data.request.song.split(":")[2];
-                      if (song === currentSong) {
-                        spotifyClient.getTrack(song).then((songObj) => {
-                          dispatch(setPaused(false));
-                          dispatch(setNowPlaying(songObj));
-                          dispatch(setNowRequest(reqRes.data.request));
-                          const time = setTimeout(() => {
-                            playNext(false, 500);
-                          }, songObj?.duration_ms! - res.progress_ms! - 2000);
-                          timeouts.push(time);
-                        });
-                      } else {
-                        console.log("not current song");
-                        soloUser(data);
-                      }
-                    })
-                    .catch((err) => {
-                      console.log(err);
-                    });
-                }
-              } else {
-                console.log("current room null");
-              }
-            })
-            .catch((err) => {
-              console.log(err);
-            });
-        })
-        .catch(() => {
-          message.info(
-            "Please start playing music on a spotify connected device first!"
-          );
-        });
-    } else {
-      spotifyClient
-        .pause()
-        .then(() => {
-          dispatch(setPaused(true));
-          timeouts.forEach((time) => {
-            clearTimeout(time);
-          });
-        })
-        .catch(() => {
-          message.info(
-            "Please start playing music on a spotify connected device first!"
-          );
-        });
-    }
-  };
-
   return (
     <Space className="App-room" size={"small"}>
       <Row className="App-header">
@@ -588,191 +510,7 @@ export default function Room() {
         </Col>
       </Row>
       <Row className="App-content">
-        <Col span={10}>
-          {nowPlaying !== undefined && nowRequest !== undefined && (
-            <Col className="App-now-playing">
-              <Row style={{ flex: 1, paddingBottom: 10 }}>
-                <Title level={5} style={{ color: "white" }}>
-                  Now Playing
-                </Title>
-              </Row>
-              <Row style={{ flex: 4 }}>
-                <Image
-                  src={nowPlaying.album.images[0].url}
-                  className="now-playing-image"
-                  alt={nowPlaying.name}
-                  preview={false}
-                />
-                <Col style={{ flex: 1.5, paddingLeft: 50 }}>
-                  <Row style={{ alignItems: "center" }}>
-                    <Image
-                      src={nowRequest.creator_uri}
-                      className="profile-image"
-                      alt={nowRequest.creator_name}
-                      preview={false}
-                    />
-                    <Title
-                      level={5}
-                      style={{
-                        color: "white",
-                        marginTop: 10,
-                      }}
-                    >
-                      {nowRequest.creator_name}
-                    </Title>
-                  </Row>
-                  <Text
-                    className="song-message"
-                    style={{ color: "white", fontSize: 20 }}
-                  >
-                    {nowRequest.message}
-                  </Text>
-                </Col>
-              </Row>
-              <Row style={{ flex: 1 }}>
-                <Col
-                  style={{
-                    flex: 1,
-                    alignItems: "start",
-                    justifyContent: "start",
-                  }}
-                >
-                  <Title
-                    className="resultName"
-                    level={3}
-                    style={{
-                      color: "white",
-                      textAlign: "start",
-                      marginTop: 20,
-                    }}
-                  >
-                    {nowPlaying.name}
-                  </Title>
-                  <Title
-                    level={5}
-                    style={{
-                      color: "white",
-                      textAlign: "start",
-                      marginTop: -10,
-                    }}
-                  >
-                    {nowPlaying.artists[0].name}
-                  </Title>
-                </Col>
-                <Col
-                  style={{
-                    flex: 2,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <Image
-                    src={paused ? play : pause}
-                    style={{
-                      width: paused ? 30 : 40,
-                      height: paused ? 30 : 40,
-                    }}
-                    className="image-button"
-                    alt={paused ? "play" : "pause"}
-                    preview={false}
-                    onClick={togglePause}
-                  />
-                </Col>
-              </Row>
-            </Col>
-          )}
-          {(nowPlaying === undefined || nowRequest === undefined) && (
-            <Col className="App-now-playing">
-              <Row style={{ flex: 1, paddingBottom: 10 }}>
-                <Title level={5} style={{ color: "white" }}>
-                  No Songs Currently Playing
-                </Title>
-              </Row>
-            </Col>
-          )}
-          <Row
-            style={{
-              flex: 1,
-              paddingBottom: 10,
-              padding: 20,
-              flexDirection: "column",
-            }}
-          >
-            <Row>
-              <Title level={5} style={{ color: "white" }}>
-                Tuned In
-              </Title>
-            </Row>
-            {listeners.length === 1 && (
-              <Row
-                style={{
-                  justifyContent: "space-evenly",
-                }}
-              >
-                <Row style={{ alignItems: "center" }}>
-                  <Image
-                    src={listeners[0].user_image}
-                    className="tunedin-image"
-                    alt={listeners[0].user_name}
-                    preview={false}
-                  />
-                  <Title
-                    level={5}
-                    style={{
-                      color: "white",
-                      marginTop: 10,
-                    }}
-                  >
-                    {listeners[0].user_name}
-                  </Title>
-                </Row>
-              </Row>
-            )}
-            {listeners.length > 1 && (
-              <Row
-                style={{
-                  justifyContent: "space-evenly",
-                }}
-              >
-                <Row style={{ alignItems: "center" }}>
-                  <Image
-                    src={listeners[0].user_image}
-                    className="tunedin-image"
-                    alt={listeners[0].user_name}
-                    preview={false}
-                  />
-                  <Title
-                    level={5}
-                    style={{
-                      color: "white",
-                      marginTop: 10,
-                    }}
-                  >
-                    {listeners[0].user_name}
-                  </Title>
-                </Row>
-                <Row style={{ alignItems: "center" }}>
-                  <Image
-                    src={listeners[1].user_image}
-                    className="tunedin-image"
-                    alt={listeners[1].user_name}
-                    preview={false}
-                  />
-                  <Title
-                    level={5}
-                    style={{
-                      color: "white",
-                      marginTop: 10,
-                    }}
-                  >
-                    {listeners.length - 1} Other Listeners
-                  </Title>
-                </Row>
-              </Row>
-            )}
-          </Row>
-        </Col>
+        {NowPlaying(spotifyClient, playNext, soloUser)}
         {Search(spotifyClient, playNext)}
       </Row>
       {Queue()}

@@ -28,3 +28,11 @@ export interface User {
   user_image: string;
   user_name: string;
 }
+
+export interface playNextFunc {
+  (skip: boolean, timeout: number): void;
+}
+
+export interface soloUserFunc {
+  (): void;
+}
