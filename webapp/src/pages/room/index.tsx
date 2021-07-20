@@ -16,7 +16,7 @@ import {
   selectImageURI,
   selectUID,
 } from "../../reducer/authReducer";
-import { GET_ROOM, NONE_PLAYING, NOW_PLAYING } from "../../query/room";
+import { GET_ROOM, NONE_PLAYING, NOW_PLAYING, UPDATE_ROOM } from "../../query/room";
 import {
   selectRoomID,
   selectRoomObj,
@@ -53,7 +53,7 @@ export default function Room() {
   const history = useHistory();
   const dispatch = useDispatch();
   const [firstLoad, setFirstLoad] = useState(false);
-  let adminDelay = useRef(2000);
+  let adminDelay = useRef(5000);
 
   const token = useSelector(selectAccessToken);
   const displayName = useSelector(selectDisplayName);
@@ -93,6 +93,7 @@ export default function Room() {
       },
     },
   });
+  const [updateRoom] = useMutation(UPDATE_ROOM);
   const [createRequest] = useMutation(CREATE_REQUEST);
   const [playRequest] = useMutation(PLAY_REQUEST);
   const [createUser] = useMutation(CREATE_USER);
@@ -108,13 +109,20 @@ export default function Room() {
         localStorage.setItem("roomID", getHashID());
         window.open(getAuthorizeHref(), "_self");
       } else {
-        dispatch(setRoomObj(data.room));
+        updateRoom({
+          variables: {
+            id: data.room._id,
+            image_uri: user_image,
+          },
+        }).then((res) => {
+          dispatch(setRoomObj(res.data.updateOneRoom));
+        })
       }
     }
     if (error) {
       console.log(error);
     }
-  }, [data, dispatch, error, loading, token]);
+  }, [data, dispatch, error, loading, token, updateRoom, user_image]);
 
   const soloUser = () => {
     console.log("RUNNING SOLOUSER");
@@ -208,7 +216,7 @@ export default function Room() {
 
   // Play Music on Entry
   useEffect(() => {
-    if (roomObj !== undefined && !userLoading && !firstLoad) {
+    if (roomObj !== undefined && !userLoading && !firstLoad && !loading) {
       console.log("RUNNING 207 EFFECT");
       console.log(roomObj);
       setFirstLoad(true);
@@ -218,7 +226,7 @@ export default function Room() {
           const currentSong = res.item?.id;
           refetchUser().then((cUser) => {
             console.log(cUser.data);
-            adminDelay.current = cUser.data.user.id === data.room.creator ? 0 : 2000
+            adminDelay.current = cUser.data.user.id === data.room.creator ? 0 : 5000
             if (
               cUser.data.user.current_room !== undefined &&
               cUser.data.user.current_room !== null &&
@@ -272,7 +280,7 @@ export default function Room() {
         });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [roomObj, userLoading]);
+  }, [roomObj, userLoading, loading]);
 
   const followAdmin = () => {
     console.log("RUNNING FOLLOW ADMIN");
@@ -472,6 +480,7 @@ export default function Room() {
             src={roomObj?.image_uri !== "" ? roomObj?.image_uri : logo}
             className="room-image"
             alt={roomObj?.name}
+            fallback={logo}
             preview={false}
           />
           <Text

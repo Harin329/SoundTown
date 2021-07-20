@@ -6,6 +6,7 @@ import { useQuery } from "@apollo/client";
 import { setRoomID } from "../../reducer/roomReducer";
 import { GET_ANY_ROOM } from "../../query/room";
 import { Room } from "../../types";
+import logo from "../../images/logo.png";
 
 export default function JoinRoom() {
   const { Title } = Typography;
@@ -36,6 +37,7 @@ export default function JoinRoom() {
                 <Image
                   style={{ borderRadius: 100, objectFit: "cover" }}
                   src={res.image_uri}
+                  fallback={logo}
                   width={100}
                   height={100}
                   preview={false}
