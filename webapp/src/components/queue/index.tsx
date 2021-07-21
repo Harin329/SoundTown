@@ -2,20 +2,17 @@ import { useMutation, useQuery } from "@apollo/client";
 import { Row, Col, Image, Typography } from "antd";
 import { useSelector } from "react-redux";
 import { GET_QUEUE, PLAY_REQUEST } from "../../query/request";
-import { selectNowRequest, selectRoomObj } from "../../reducer/roomReducer";
+import { selectRoomObj } from "../../reducer/roomReducer";
 import "./index.css";
 import close from "../../images/close.png";
-import { playNextFunc, Request } from "../../types";
+import { Request } from "../../types";
 import { selectUID } from "../../reducer/authReducer";
-import { useEffect } from "react";
-import { timeouts } from "../../pages/room";
 
-export default function Queue(playNext: playNextFunc) {
+export default function Queue() {
   const { Title, Text } = Typography;
 
   const roomObj = useSelector(selectRoomObj);
   const userID = useSelector(selectUID);
-  const nowRequest = useSelector(selectNowRequest);
 
   const {
     loading: queueLoading,
@@ -31,22 +28,103 @@ export default function Queue(playNext: playNextFunc) {
   });
   const [playRequest] = useMutation(PLAY_REQUEST);
 
-  useEffect(() => {
-    if (nowRequest !== undefined) {
-      if (nowRequest !== queue.requests[0]) {
-        const time = setTimeout(() => {
-          if (nowRequest !== queue.requests[0]) {
-            timeouts.forEach((time) => {
-              clearTimeout(time);
-            });
-            playNext(true, 500);
-          }
-        }, 5000)
-        timeouts.push(time);
-      }
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [queue]);
+  // Poll to keep up, may be required for group skipping
+  // const [currentReq, setCurrentReq] = useState<Request | undefined>(undefined);
+  // const { loading, data } = useQuery(GET_ROOM, {
+  //   variables: { id: roomObj?._id },
+  //   pollInterval: 10000,
+  // });
+  // const playSong = (next: Request) => {
+  //   console.log("PLAYING SPECIFIC NEXT");
+  //   spotifyClient
+  //     .queue(next.song)
+  //     .then(() => {
+  //       spotifyClient.getTrack(next.song.split(":")[2]).then((songObj) => {
+  //         spotifyClient.skipToNext();
+  //         dispatch(setPaused(false));
+  //         dispatch(setNowPlaying(songObj));
+  //         dispatch(setNowRequest(next));
+  //         keepUser({
+  //           variables: {
+  //             id: userID,
+  //             current_room: roomID + "_" + next._id,
+  //           },
+  //         }).then(() => {
+  //           if (
+  //             currentUser.user !== undefined &&
+  //             currentUser.user.id === data.room.creator
+  //           ) {
+  //             const grandTime = setTimeout(() => {
+  //               const date = new Date();
+  //               playRequest({
+  //                 variables: {
+  //                   id: next._id,
+  //                   playedTime: date.toISOString(),
+  //                 },
+  //               }).then(() => {
+  //                 mutateNowPlaying({
+  //                   variables: {
+  //                     id: roomID,
+  //                     now_playing: {
+  //                       link: next._id,
+  //                     },
+  //                   },
+  //                 });
+  //                 refetchQueue();
+  //                 refetchListeners({
+  //                   current_room: roomID + "_" + next._id,
+  //                 }).then((res) => {
+  //                   console.log(res.data.users);
+  //                   dispatch(setListeners(res.data.users));
+  //                   const time = setTimeout(() => {
+  //                     playNext(false, 500);
+  //                   }, songObj?.duration_ms! - 10000 - adminDelay.current);
+  //                   timeouts.push(time);
+  //                 });
+  //               });
+  //             }, 10000);
+  //             timeouts.push(grandTime);
+  //           } else {
+  //             refetchQueue();
+  //             refetchListeners({
+  //               current_room: roomID + "_" + next._id,
+  //             }).then((res) => {
+  //               console.log(res.data.users);
+  //               dispatch(setListeners(res.data.users));
+  //               const time = setTimeout(() => {
+  //                 playNext(false, 500);
+  //               }, songObj?.duration_ms! - 2000 - adminDelay.current);
+  //               timeouts.push(time);
+  //             });
+  //           }
+  //         });
+  //       });
+  //     })
+  //     .catch((err) => {
+  //       console.log(err);
+  //       message.info(
+  //         "Please start playing music on a spotify connected device first!"
+  //       );
+  //     });
+  // };
+  // useEffect(() => {
+  //   console.log(currentReq)
+  //   console.log(data);
+  //   if (!loading && data !== undefined && data.room.now_playing !== null) {
+  //     if (currentReq !== undefined) {
+  //       if (currentReq._id !== data.room.now_playing._id) {
+  //         timeouts.forEach((time) => {
+  //           clearTimeout(time);
+  //         });
+  //         playSong(data.room.now_playing)
+  //         setCurrentReq(data.room.now_playing);
+  //       }
+  //     } else {
+  //       setCurrentReq(data.room.now_playing);
+  //     }
+  //   }
+  // // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, [data]);
 
   const removeFromQueue = (requestObj: Request) => {
     console.log("Removing song: " + requestObj.song_name);

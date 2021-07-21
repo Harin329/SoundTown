@@ -25,16 +25,8 @@ export const CREATE_ROOM = gql`
 `;
 
 export const UPDATE_ROOM = gql`
-  mutation UpdateRoom(
-    $id: ObjectId!
-    $image_uri: String
-  ) {
-    updateOneRoom(
-      query: { _id: $id }
-      set: {
-        image_uri: $image_uri
-      }
-    ) {
+  mutation UpdateRoom($id: ObjectId!, $image_uri: String) {
+    updateOneRoom(query: { _id: $id }, set: { image_uri: $image_uri }) {
       _id
       name
       creator
@@ -45,7 +37,10 @@ export const UPDATE_ROOM = gql`
 `;
 
 export const NOW_PLAYING = gql`
-  mutation NowPlaying($id: ObjectId!, $now_playing: RoomNow_playingRelationInput!) {
+  mutation NowPlaying(
+    $id: ObjectId!
+    $now_playing: RoomNow_playingRelationInput!
+  ) {
     updateOneRoom(query: { _id: $id }, set: { now_playing: $now_playing }) {
       _id
       admin
@@ -90,9 +85,18 @@ export const GET_ROOM = gql`
       name
       now_playing {
         _id
-        creator
-        message
         song
+        song_name
+        creator
+        creator_name
+        creator_uri
+        image_uri
+        message
+        played
+        playedTime
+        room_id {
+          _id
+        }
       }
     }
   }

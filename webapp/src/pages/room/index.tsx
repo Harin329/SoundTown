@@ -136,6 +136,7 @@ export default function Room() {
   const soloUser = () => {
     console.log("RUNNING SOLOUSER");
     if (data.room.now_playing !== null) {
+      console.log(roomID + "_" + data.room.now_playing._id)
       const refetchNext = refetchListeners({
         current_room: roomID + "_" + data.room.now_playing._id,
       });
@@ -164,7 +165,7 @@ export default function Room() {
                 const next = res.data.request as Request;
                 const startTime = new Date(next.playedTime);
                 const now = new Date();
-                const timePlayed = now.getTime() - startTime.getTime() + 8888; // Adjust for API call time
+                const timePlayed = now.getTime() - startTime.getTime();
 
                 spotifyClient
                   .queue(next.song)
@@ -344,7 +345,9 @@ export default function Room() {
                         dispatch(setListeners(res.data.users));
                         console.log(currentSong);
 
-                        const date = new Date();
+                        let date = new Date();
+                        const adjDate = date.getTime() - (progress ?? 0);
+                        date = new Date(adjDate)
                         playRequest({
                           variables: {
                             id: next._id,
@@ -558,7 +561,7 @@ export default function Room() {
         {NowPlaying(spotifyClient, playNext, soloUser)}
         {Search(spotifyClient, playNext)}
       </Row>
-      {Queue(playNext)}
+      {Queue()}
     </Space>
   );
 }
