@@ -1,2 +1,16 @@
-@import '~antd/dist/antd.css';
+@import "~antd/dist/antd.css";
 
+.now-playing-image {
+  height: 25vh;
+  width: 25vh;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+.tunedin-image {
+  height: 8vh;
+  width: 8vh;
+  border-radius: 8vh;
+  object-fit: cover;
+  margin-right: 10px;
+}

@@ -16,7 +16,12 @@ import {
   selectImageURI,
   selectUID,
 } from "../../reducer/authReducer";
-import { GET_ROOM, NONE_PLAYING, NOW_PLAYING, UPDATE_ROOM } from "../../query/room";
+import {
+  GET_ROOM,
+  NONE_PLAYING,
+  NOW_PLAYING,
+  UPDATE_ROOM,
+} from "../../query/room";
 import {
   selectRoomID,
   selectRoomObj,
@@ -53,7 +58,7 @@ export default function Room() {
   const history = useHistory();
   const dispatch = useDispatch();
   const [firstLoad, setFirstLoad] = useState(false);
-  let adminDelay = useRef(5000);
+  let adminDelay = useRef(0);
 
   const token = useSelector(selectAccessToken);
   const displayName = useSelector(selectDisplayName);
@@ -109,20 +114,24 @@ export default function Room() {
         localStorage.setItem("roomID", getHashID());
         window.open(getAuthorizeHref(), "_self");
       } else {
-        updateRoom({
-          variables: {
-            id: data.room._id,
-            image_uri: user_image,
-          },
-        }).then((res) => {
-          dispatch(setRoomObj(res.data.updateOneRoom));
-        })
+        if (userID === data.room.creator) {
+          updateRoom({
+            variables: {
+              id: data.room._id,
+              image_uri: user_image,
+            },
+          }).then((res) => {
+            dispatch(setRoomObj(res.data.updateOneRoom));
+          });
+        } else {
+          dispatch(setRoomObj(data.room));
+        }
       }
     }
     if (error) {
       console.log(error);
     }
-  }, [data, dispatch, error, loading, token, updateRoom, user_image]);
+  }, [data, dispatch, error, loading, token, updateRoom, userID, user_image]);
 
   const soloUser = () => {
     console.log("RUNNING SOLOUSER");
@@ -182,7 +191,7 @@ export default function Room() {
                             dispatch(setListeners(res.data.users));
                             const time = setTimeout(() => {
                               playNext(false, 500);
-                            }, songObj.duration_ms - timePlayed - 2000 + adminDelay.current);
+                            }, songObj.duration_ms - timePlayed - 2000 - adminDelay.current);
                             timeouts.push(time);
                           });
                         });
@@ -226,7 +235,8 @@ export default function Room() {
           const currentSong = res.item?.id;
           refetchUser().then((cUser) => {
             console.log(cUser.data);
-            adminDelay.current = cUser.data.user.id === data.room.creator ? 0 : 5000
+            adminDelay.current =
+              cUser.data.user.id === data.room.creator ? 2000 : 0;
             if (
               cUser.data.user.current_room !== undefined &&
               cUser.data.user.current_room !== null &&
@@ -257,7 +267,7 @@ export default function Room() {
                       });
                       const time = setTimeout(() => {
                         playNext(false, 500);
-                      }, songObj?.duration_ms! - res.progress_ms! - 2000 + adminDelay.current);
+                      }, songObj?.duration_ms! - res.progress_ms! - 2000 - adminDelay.current);
                       timeouts.push(time);
                     });
                   } else {
@@ -340,7 +350,7 @@ export default function Room() {
 
                     const time = setTimeout(() => {
                       playNext(false, 500);
-                    }, currentSong?.duration_ms! - progress! - 2000 + adminDelay.current);
+                    }, currentSong?.duration_ms! - progress! - 2000 - adminDelay.current);
                     timeouts.push(time);
                   })
                   .catch((err) => {
@@ -393,34 +403,48 @@ export default function Room() {
                         currentUser.user !== undefined &&
                         currentUser.user.id === data.room.creator
                       ) {
-                        const date = new Date();
-                        playRequest({
-                          variables: {
-                            id: next._id,
-                            playedTime: date.toISOString(),
-                          },
-                        }).then(() => {
-                          mutateNowPlaying({
+                        setTimeout(() => {
+                          const date = new Date();
+                          playRequest({
                             variables: {
-                              id: roomID,
-                              now_playing: {
-                                link: next._id,
-                              },
+                              id: next._id,
+                              playedTime: date.toISOString(),
                             },
+                          }).then(() => {
+                            mutateNowPlaying({
+                              variables: {
+                                id: roomID,
+                                now_playing: {
+                                  link: next._id,
+                                },
+                              },
+                            });
+                            refetchQueue();
+                            refetchListeners({
+                              current_room: roomID + "_" + next._id,
+                            }).then((res) => {
+                              console.log(res.data.users);
+                              dispatch(setListeners(res.data.users));
+                              const time = setTimeout(() => {
+                                playNext(false, 500);
+                              }, songObj?.duration_ms! - timeout - 10000 - adminDelay.current);
+                              timeouts.push(time);
+                            });
                           });
+                        }, 10000);
+                      } else {
+                        refetchQueue();
+                        refetchListeners({
+                          current_room: roomID + "_" + next._id,
+                        }).then((res) => {
+                          console.log(res.data.users);
+                          dispatch(setListeners(res.data.users));
+                          const time = setTimeout(() => {
+                            playNext(false, 500);
+                          }, songObj?.duration_ms! - timeout - 2000 - adminDelay.current);
+                          timeouts.push(time);
                         });
                       }
-                      refetchQueue();
-                      refetchListeners({
-                        current_room: roomID + "_" + next._id,
-                      }).then((res) => {
-                        console.log(res.data.users);
-                        dispatch(setListeners(res.data.users));
-                        const time = setTimeout(() => {
-                          playNext(false, 500);
-                        }, songObj?.duration_ms! - timeout - 2000 + adminDelay.current);
-                        timeouts.push(time);
-                      });
                     });
                   });
               })

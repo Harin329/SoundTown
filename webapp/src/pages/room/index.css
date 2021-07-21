@@ -58,33 +58,10 @@
   margin-right: 10px;
 }
 
-.now-playing-image {
-  height: 250px;
-  width: 250px;
-  border-radius: 10px;
-  object-fit: cover;
-}
-
 .profile-image {
   height: 50px;
   width: 50px;
   border-radius: 50px;
-  object-fit: cover;
-  margin-right: 10px;
-}
-
-.tunedin-image {
-  height: 80px;
-  width: 80px;
-  border-radius: 80px;
-  object-fit: cover;
-  margin-right: 10px;
-}
-
-.nextsong-image {
-  height: 100px;
-  width: 100px;
-  border-radius: 10px;
   object-fit: cover;
   margin-right: 10px;
 }
@@ -101,10 +78,6 @@
   display: flex;
   text-align: start;
   margin-top: 10px;
-}
-
-.resultBlock:hover {
-  opacity: 0.5;
 }
 
 .resultName {

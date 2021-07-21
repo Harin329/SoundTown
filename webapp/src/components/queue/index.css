@@ -8,8 +8,17 @@
   padding-left: 3%;
   padding-right: 3%;
   flex: 1;
-  flex-direction: column;
+  justify-content: space-evenly;
+  /* flex-direction: column; */
   font-size: calc(10px + 2vmin);
   background-color: #000000;
   color: white;
+}
+
+.nextsong-image {
+  height: 10vh;
+  width: 10vh;
+  border-radius: 10px;
+  object-fit: cover;
+  margin-right: 10px;
 }

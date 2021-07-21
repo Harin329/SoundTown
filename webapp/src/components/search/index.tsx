@@ -272,8 +272,6 @@ export default function Search(
                 className="resultBlock"
                 key={res.id}
                 style={{
-                  width: "25%",
-                  height: 250,
                   alignItems: "start",
                   display: "flex",
                   flexDirection: "column",
@@ -283,12 +281,7 @@ export default function Search(
                 }}
               >
                 <Image
-                  style={{
-                    width: 150,
-                    height: 150,
-                    objectFit: "cover",
-                    borderRadius: 10,
-                  }}
+                  className="resultImage"
                   alt="example"
                   src={res.album.images[0].url}
                   preview={false}
@@ -321,8 +314,6 @@ export default function Search(
             <Col
               className="resultBlock"
               style={{
-                width: "25%",
-                height: 250,
                 alignItems: "start",
                 display: "flex",
                 flexDirection: "column",
@@ -332,13 +323,11 @@ export default function Search(
               }}
             >
               <Col
+                className="resultImage"
                 style={{
                   fontSize: 18,
                   textAlign: "start",
-                  width: 150,
-                  height: 150,
                   backgroundColor: "black",
-                  borderRadius: 10,
                   justifyContent: "center",
                   display: "flex",
                   alignItems: "center",
@@ -476,8 +465,6 @@ export default function Search(
                   className="resultBlock"
                   key={res.id}
                   style={{
-                    width: "25%",
-                    height: 250,
                     alignItems: "start",
                     display: "flex",
                     flexDirection: "column",
