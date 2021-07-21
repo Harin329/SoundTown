@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import SpotifyWebApi from "spotify-web-api-js";
 import play from "../../images/play.png";
 import pause from "../../images/pause.png";
+// import skip from "../../images/skip.png";
 import {
   isRoomPaused,
   selectNowPlaying,
@@ -111,6 +112,14 @@ export default function NowPlaying(
     }
   };
 
+  // const skipSong = () => {
+  //   console.log("skipping");
+  //   timeouts.forEach((time) => {
+  //     clearTimeout(time);
+  //   });
+  //   // Need to do something so everyone skips
+  // }
+
   return (
     <Col span={10}>
       {nowPlaying !== undefined && nowRequest !== undefined && (
@@ -191,6 +200,7 @@ export default function NowPlaying(
                 justifyContent: "center",
               }}
             >
+              <Row justify="space-between">
               <Image
                 src={paused ? play : pause}
                 style={{
@@ -202,6 +212,18 @@ export default function NowPlaying(
                 preview={false}
                 onClick={togglePause}
               />
+              {/* <Image
+                src={skip}
+                style={{
+                  width: 40,
+                  height: 40,
+                }}
+                className="image-button"
+                alt={"skip"}
+                preview={false}
+                onClick={skipSong}
+              /> */}
+              </Row>
             </Col>
           </Row>
         </Col>

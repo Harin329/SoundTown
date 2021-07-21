@@ -164,7 +164,7 @@ export default function Room() {
                 const next = res.data.request as Request;
                 const startTime = new Date(next.playedTime);
                 const now = new Date();
-                const timePlayed = now.getTime() - startTime.getTime() + 5000; // Adjust for API call time
+                const timePlayed = now.getTime() - startTime.getTime() + 8888; // Adjust for API call time
 
                 spotifyClient
                   .queue(next.song)
@@ -226,6 +226,7 @@ export default function Room() {
 
   // Play Music on Entry
   useEffect(() => {
+    // First Load & Finish Loading?
     if (roomObj !== undefined && !userLoading && !firstLoad && !loading) {
       console.log("RUNNING 207 EFFECT");
       console.log(roomObj);
@@ -297,73 +298,81 @@ export default function Room() {
     console.log("RUNNING FOLLOW ADMIN");
     console.log(roomObj);
     if (roomObj?._id !== undefined && refetchListeners !== undefined) {
-      spotifyClient.getMyCurrentPlayingTrack().then((res) => {
-        const currentSong = res.item;
-        const progress = res.progress_ms;
-        if (currentSong) {
-          createRequest({
-            variables: {
-              song: currentSong?.uri,
-              song_name: currentSong?.name,
-              creator: userID,
-              creator_name: displayName,
-              creator_uri: user_image,
-              image_uri: currentSong?.album.images[0].url,
-              message: "",
-              room_id: {
-                link: roomObj._id,
-              },
-            },
-          })
-            .then((res) => {
-              const next = res.data.insertOneRequest;
-              dispatch(setPaused(false));
-              dispatch(setNowPlaying(currentSong!));
-              dispatch(setNowRequest(next));
-              keepUser({
+      spotifyClient.getMyCurrentPlaybackState().then((state) => {
+        if (state.is_playing) {
+          spotifyClient.getMyCurrentPlayingTrack().then((res) => {
+            const currentSong = res.item;
+            const progress = res.progress_ms;
+            if (currentSong) {
+              createRequest({
                 variables: {
-                  id: userID,
-                  current_room: roomID + "_" + next._id,
-                },
-              }).then(() => {
-                mutateNowPlaying({
-                  variables: {
-                    id: roomID,
-                    now_playing: {
-                      link: next._id,
-                    },
+                  song: currentSong?.uri,
+                  song_name: currentSong?.name,
+                  creator: userID,
+                  creator_name: displayName,
+                  creator_uri: user_image,
+                  image_uri: currentSong?.album.images[0].url,
+                  message: "",
+                  room_id: {
+                    link: roomObj._id,
                   },
-                });
-                refetchListeners({
-                  current_room: roomID + "_" + next._id,
-                })
-                  .then((res) => {
-                    dispatch(setListeners(res.data.users));
-                    console.log(currentSong);
-
-                    const date = new Date();
-                    playRequest({
+                },
+              })
+                .then((res) => {
+                  const next = res.data.insertOneRequest;
+                  dispatch(setPaused(false));
+                  dispatch(setNowPlaying(currentSong!));
+                  dispatch(setNowRequest(next));
+                  keepUser({
+                    variables: {
+                      id: userID,
+                      current_room: roomID + "_" + next._id,
+                    },
+                  }).then(() => {
+                    mutateNowPlaying({
                       variables: {
-                        id: next._id,
-                        playedTime: date.toISOString(),
+                        id: roomID,
+                        now_playing: {
+                          link: next._id,
+                        },
                       },
                     });
+                    refetchListeners({
+                      current_room: roomID + "_" + next._id,
+                    })
+                      .then((res) => {
+                        dispatch(setListeners(res.data.users));
+                        console.log(currentSong);
 
-                    const time = setTimeout(() => {
-                      playNext(false, 500);
-                    }, currentSong?.duration_ms! - progress! - 2000 - adminDelay.current);
-                    timeouts.push(time);
-                  })
-                  .catch((err) => {
-                    console.log(err);
+                        const date = new Date();
+                        playRequest({
+                          variables: {
+                            id: next._id,
+                            playedTime: date.toISOString(),
+                          },
+                        });
+
+                        const time = setTimeout(() => {
+                          playNext(false, 500);
+                        }, currentSong?.duration_ms! - progress! - 2000 - adminDelay.current);
+                        timeouts.push(time);
+                      })
+                      .catch((err) => {
+                        console.log(err);
+                      });
                   });
-              });
-            })
-            .catch((err) => {
-              message.error(err);
-            });
+                })
+                .catch((err) => {
+                  message.error(err);
+                });
+            } else {
+              message.info("No Song Playing!");
+            }
+          });
         } else {
-          message.info("No Song Playing!");
+          dispatch(setPaused(true));
+          dispatch(setNowPlaying(undefined));
+          dispatch(setNowRequest(undefined));
         }
       });
     }
