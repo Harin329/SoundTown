@@ -155,7 +155,8 @@ export default function Room() {
                   user_name: displayName,
                 },
               }).then(() => {
-                playNext(false, 5000);
+                // This may need to check if anything is playing
+                playNext(true, 5000);
               });
             } else {
               // Join in on current song
@@ -163,7 +164,7 @@ export default function Room() {
                 const next = res.data.request as Request;
                 const startTime = new Date(next.playedTime);
                 const now = new Date();
-                const timePlayed = now.getTime() - startTime.getTime();
+                const timePlayed = now.getTime() - startTime.getTime() + 5000; // Adjust for API call time
 
                 spotifyClient
                   .queue(next.song)
