@@ -2,19 +2,26 @@ import { useMutation, useQuery } from "@apollo/client";
 import { Row, Col, Image, Typography } from "antd";
 import { useSelector } from "react-redux";
 import { GET_QUEUE, PLAY_REQUEST } from "../../query/request";
-import { selectRoomObj } from "../../reducer/roomReducer";
+import { selectNowRequest, selectRoomObj } from "../../reducer/roomReducer";
 import "./index.css";
 import close from "../../images/close.png";
-import { Request } from "../../types";
+import { playNextFunc, Request } from "../../types";
 import { selectUID } from "../../reducer/authReducer";
+import { useEffect } from "react";
+import { timeouts } from "../../pages/room";
 
-export default function Queue() {
+export default function Queue(playNext: playNextFunc) {
   const { Title, Text } = Typography;
 
   const roomObj = useSelector(selectRoomObj);
   const userID = useSelector(selectUID);
+  const nowRequest = useSelector(selectNowRequest);
 
-  const { loading: queueLoading, data: queue, refetch: refetchQueue } = useQuery(GET_QUEUE, {
+  const {
+    loading: queueLoading,
+    data: queue,
+    refetch: refetchQueue,
+  } = useQuery(GET_QUEUE, {
     variables: {
       id: {
         _id: roomObj?._id,
@@ -24,8 +31,25 @@ export default function Queue() {
   });
   const [playRequest] = useMutation(PLAY_REQUEST);
 
+  useEffect(() => {
+    if (nowRequest !== undefined) {
+      if (nowRequest !== queue.requests[0]) {
+        const time = setTimeout(() => {
+          if (nowRequest !== queue.requests[0]) {
+            timeouts.forEach((time) => {
+              clearTimeout(time);
+            });
+            playNext(true, 500);
+          }
+        }, 5000)
+        timeouts.push(time);
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [queue]);
+
   const removeFromQueue = (requestObj: Request) => {
-    console.log("Removing song: " + requestObj.song_name)
+    console.log("Removing song: " + requestObj.song_name);
     const date = new Date();
     playRequest({
       variables: {
@@ -34,7 +58,7 @@ export default function Queue() {
       },
     }).then(() => {
       refetchQueue();
-    })
+    });
   };
 
   return (
@@ -77,23 +101,23 @@ export default function Queue() {
                     style={{
                       color: "white",
                       width: 100,
-                      fontSize: 12
+                      fontSize: 12,
                     }}
                   >
                     {res.creator_name}'s Request
                   </Text>
                 </Col>
                 <Image
-                    className="image-button"
-                    src={close}
-                    hidden={userID !== roomObj?.creator}
-                    style={{ width: 30, height: 30 }}
-                    alt={"Close"}
-                    preview={false}
-                    onClick={() => {
-                      removeFromQueue(res);
-                    }}
-                  />
+                  className="image-button"
+                  src={close}
+                  hidden={userID !== roomObj?.creator}
+                  style={{ width: 30, height: 30 }}
+                  alt={"Close"}
+                  preview={false}
+                  onClick={() => {
+                    removeFromQueue(res);
+                  }}
+                />
               </Row>
             );
           })}

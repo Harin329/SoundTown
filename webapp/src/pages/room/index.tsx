@@ -413,7 +413,7 @@ export default function Room() {
                         currentUser.user !== undefined &&
                         currentUser.user.id === data.room.creator
                       ) {
-                        setTimeout(() => {
+                        const grandTime = setTimeout(() => {
                           const date = new Date();
                           playRequest({
                             variables: {
@@ -442,6 +442,7 @@ export default function Room() {
                             });
                           });
                         }, 10000);
+                        timeouts.push(grandTime);
                       } else {
                         refetchQueue();
                         refetchListeners({
@@ -557,7 +558,7 @@ export default function Room() {
         {NowPlaying(spotifyClient, playNext, soloUser)}
         {Search(spotifyClient, playNext)}
       </Row>
-      {Queue()}
+      {Queue(playNext)}
     </Space>
   );
 }
