@@ -24,6 +24,7 @@ import {
 } from "../../query/room";
 import {
   selectRoomID,
+  selectRoomListeners,
   selectRoomObj,
   setListeners,
   setNowPlaying,
@@ -65,6 +66,7 @@ export default function Room() {
   const userID = useSelector(selectUID);
   const user_image = useSelector(selectImageURI);
   const roomObj = useSelector(selectRoomObj);
+  const listeners = useSelector(selectRoomListeners);
 
   const spotifyClient = useMemo(() => {
     const client = new SpotifyWebApi();
@@ -110,8 +112,8 @@ export default function Room() {
   useEffect(() => {
     console.log("RUNNING 107 INITIAL LOAD");
     if (!loading) {
+      localStorage.setItem("roomID", getHashID());
       if (!token || data === undefined) {
-        localStorage.setItem("roomID", getHashID());
         window.open(getAuthorizeHref(), "_self");
       } else {
         if (userID === data.room.creator) {
@@ -136,7 +138,7 @@ export default function Room() {
   const soloUser = () => {
     console.log("RUNNING SOLOUSER");
     if (data.room.now_playing !== null) {
-      console.log(roomID + "_" + data.room.now_playing._id)
+      console.log(roomID + "_" + data.room.now_playing._id);
       const refetchNext = refetchListeners({
         current_room: roomID + "_" + data.room.now_playing._id,
       });
@@ -174,7 +176,17 @@ export default function Room() {
                       .getTrack(next.song.split(":")[2])
                       .then((songObj) => {
                         spotifyClient.skipToNext().then(() => {
-                          spotifyClient.seek(timePlayed);
+                          spotifyClient.seek(timePlayed).catch((err: SpotifyWebApi.ErrorObject) => {
+                            console.log(err.response);
+                            if (err.status === 401) {
+                              window.open(getAuthorizeHref(), "_self");
+                            }
+                          });
+                        }).catch((err: SpotifyWebApi.ErrorObject) => {
+                          console.log(err.response);
+                          if (err.status === 401) {
+                            window.open(getAuthorizeHref(), "_self");
+                          }
                         });
                         dispatch(setPaused(false));
                         dispatch(setNowPlaying(songObj));
@@ -197,13 +209,20 @@ export default function Room() {
                             timeouts.push(time);
                           });
                         });
+                      }).catch((err: SpotifyWebApi.ErrorObject) => {
+                        console.log(err.response);
+                        if (err.status === 401) {
+                          window.open(getAuthorizeHref(), "_self");
+                        }
                       });
                   })
-                  .catch((err) => {
-                    console.log(err);
-                    message.info(
-                      "Please start playing music on a spotify connected device first!"
-                    );
+                  .catch((err: SpotifyWebApi.ErrorObject) => {
+                    console.log(err.response);
+                    if (err.status === 401) {
+                      window.open(getAuthorizeHref(), "_self");
+                    } else {
+                      message.info("Please start playing music on a spotify connected device first!");
+                    }
                   });
               });
             }
@@ -228,7 +247,13 @@ export default function Room() {
   // Play Music on Entry
   useEffect(() => {
     // First Load & Finish Loading?
-    if (roomObj !== undefined && !userLoading && !firstLoad && !loading) {
+    if (
+      roomObj !== undefined &&
+      roomObj._id === roomID &&
+      !userLoading &&
+      !firstLoad &&
+      !loading
+    ) {
       console.log("RUNNING 207 EFFECT");
       console.log(roomObj);
       setFirstLoad(true);
@@ -272,6 +297,11 @@ export default function Room() {
                         playNext(false, 500);
                       }, songObj?.duration_ms! - res.progress_ms! - 2000 - adminDelay.current);
                       timeouts.push(time);
+                    }).catch((err: SpotifyWebApi.ErrorObject) => {
+                      console.log(err.response);
+                      if (err.status === 401) {
+                        window.open(getAuthorizeHref(), "_self");
+                      }
                     });
                   } else {
                     console.log("not current song");
@@ -288,8 +318,11 @@ export default function Room() {
             }
           });
         })
-        .catch((err) => {
-          console.log(err);
+        .catch((err: SpotifyWebApi.ErrorObject) => {
+          console.log(err.response);
+          if (err.status === 401) {
+            window.open(getAuthorizeHref(), "_self");
+          }
         });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -347,7 +380,7 @@ export default function Room() {
 
                         let date = new Date();
                         const adjDate = date.getTime() - (progress ?? 0);
-                        date = new Date(adjDate)
+                        date = new Date(adjDate);
                         playRequest({
                           variables: {
                             id: next._id,
@@ -371,11 +404,21 @@ export default function Room() {
             } else {
               message.info("No Song Playing!");
             }
+          }).catch((err: SpotifyWebApi.ErrorObject) => {
+            console.log(err.response);
+            if (err.status === 401) {
+              window.open(getAuthorizeHref(), "_self");
+            }
           });
         } else {
           dispatch(setPaused(true));
           dispatch(setNowPlaying(undefined));
           dispatch(setNowRequest(undefined));
+        }
+      }).catch((err: SpotifyWebApi.ErrorObject) => {
+        console.log(err.response);
+        if (err.status === 401) {
+          window.open(getAuthorizeHref(), "_self");
         }
       });
     }
@@ -401,7 +444,12 @@ export default function Room() {
                   .getTrack(next.song.split(":")[2])
                   .then((songObj) => {
                     if (skip) {
-                      spotifyClient.skipToNext();
+                      spotifyClient.skipToNext().catch((err: SpotifyWebApi.ErrorObject) => {
+                        console.log(err.response);
+                        if (err.status === 401) {
+                          window.open(getAuthorizeHref(), "_self");
+                        }
+                      });
                     }
                     dispatch(setPaused(false));
                     dispatch(setNowPlaying(songObj));
@@ -413,8 +461,9 @@ export default function Room() {
                       },
                     }).then(() => {
                       if (
-                        currentUser.user !== undefined &&
-                        currentUser.user.id === data.room.creator
+                        (currentUser.user !== undefined &&
+                          currentUser.user.id === data.room.creator) ||
+                        listeners.length <= 1
                       ) {
                         const grandTime = setTimeout(() => {
                           const date = new Date();
@@ -460,13 +509,22 @@ export default function Room() {
                         });
                       }
                     });
+                  }).catch((err: SpotifyWebApi.ErrorObject) => {
+                    console.log(err.response);
+                    if (err.status === 401) {
+                      window.open(getAuthorizeHref(), "_self");
+                    }
                   });
               })
-              .catch((err) => {
-                console.log(err);
-                message.info(
-                  "Please start playing music on a spotify connected device first!"
-                );
+              .catch((err: SpotifyWebApi.ErrorObject) => {
+                console.log(err.response);
+                if (err.status === 401) {
+                  window.open(getAuthorizeHref(), "_self");
+                } else {
+                  message.info(
+                    "Please start playing music on a spotify connected device first!"
+                  );
+                }
               });
           } else {
             if (

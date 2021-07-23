@@ -188,7 +188,7 @@ export default function Queue() {
                 <Image
                   className="image-button"
                   src={close}
-                  hidden={userID !== roomObj?.creator}
+                  hidden={(userID !== roomObj?.creator && userID !== res.creator)}
                   style={{ width: 30, height: 30 }}
                   alt={"Close"}
                   preview={false}

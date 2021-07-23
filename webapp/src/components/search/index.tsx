@@ -33,6 +33,7 @@ import { NOW_PLAYING } from "../../query/room";
 import { timeouts } from "../../pages/room";
 import Modal from "antd/lib/modal/Modal";
 import { playNextFunc } from "../../types";
+import { getAuthorizeHref } from "../../oauthConfig";
 
 export default function Search(
   spotifyClient: SpotifyWebApi.SpotifyWebApiJs,
@@ -75,8 +76,11 @@ export default function Search(
             );
             setSearchResult(results);
           })
-          .catch((err) => {
-            console.log(err);
+          .catch((err: SpotifyWebApi.ErrorObject) => {
+            console.log(err.response);
+            if (err.status === 401) {
+              window.open(getAuthorizeHref(), "_self");
+            }
           });
       }
     };
@@ -132,7 +136,12 @@ export default function Search(
                     _id: roomObj?._id,
                   },
                 });
-                spotifyClient.skipToNext();
+                spotifyClient.skipToNext().catch((err: SpotifyWebApi.ErrorObject) => {
+                  console.log(err.response);
+                  if (err.status === 401) {
+                    window.open(getAuthorizeHref(), "_self");
+                  }
+                });
               });
 
               const time = setTimeout(() => {
@@ -142,11 +151,13 @@ export default function Search(
               timeouts.push(time);
             });
           })
-          .catch((err) => {
-            console.log(err);
-            message.info(
-              "Please start playing music on a spotify connected device first!"
-            );
+          .catch((err: SpotifyWebApi.ErrorObject) => {
+            console.log(err.response);
+            if (err.status === 401) {
+              window.open(getAuthorizeHref(), "_self");
+            } else {
+              message.info("Please start playing music on a spotify connected device first!");
+            }
           });
       } else {
         spotifyClient
@@ -188,7 +199,12 @@ export default function Search(
                       },
                     });
                   });
-                  spotifyClient.skipToNext();
+                  spotifyClient.skipToNext().catch((err: SpotifyWebApi.ErrorObject) => {
+                    console.log(err.response);
+                    if (err.status === 401) {
+                      window.open(getAuthorizeHref(), "_self");
+                    }
+                  });
 
                   const time = setTimeout(() => {
                     playNext(false, 500);
@@ -197,19 +213,28 @@ export default function Search(
                   timeouts.push(time);
                 });
               })
-              .catch((err) => {
-                console.log(err);
-                message.info(
-                  "Please start playing music on a spotify connected device first!"
-                );
+              .catch((err: SpotifyWebApi.ErrorObject) => {
+                console.log(err.response);
+                if (err.status === 401) {
+                  window.open(getAuthorizeHref(), "_self");
+                } else {
+                  message.info("Please start playing music on a spotify connected device first!");
+                }
               });
           })
-          .catch((err) => {
-            console.log(err);
-            message.info(
-              "Please start playing music on a spotify connected device first!"
-            );
+          .catch((err: SpotifyWebApi.ErrorObject) => {
+            console.log(err.response);
+            if (err.status === 401) {
+              window.open(getAuthorizeHref(), "_self");
+            } else {
+              message.info("Please start playing music on a spotify connected device first!");
+            }
           });
+      }
+    }).catch((err: SpotifyWebApi.ErrorObject) => {
+      console.log(err.response);
+      if (err.status === 401) {
+        window.open(getAuthorizeHref(), "_self");
       }
     });
   };

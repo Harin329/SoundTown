@@ -7,7 +7,10 @@ export interface Request {
   creator_uri: string;
   image_uri: string;
   message: string;
-  room_id?: any;
+  room_id?: {
+    __typename: string;
+    _id: string;
+  };
   played: boolean;
   playedTime: Date;
 }

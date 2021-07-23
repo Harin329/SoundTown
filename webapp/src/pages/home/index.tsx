@@ -3,7 +3,11 @@ import { useSelector, useDispatch } from "react-redux";
 import { Typography, Row, Button, Image, Space, message } from "antd";
 import { useHistory } from "react-router-dom";
 import "./index.css";
-import { getHashParams, removeHashParams } from "../../utils/hashUtils";
+import {
+  getHashID,
+  getHashParams,
+  removeHashParams,
+} from "../../utils/hashUtils";
 import {
   selectIsLoggedIn,
   setAccessToken,
@@ -23,7 +27,18 @@ import SpotifyWebApi from "spotify-web-api-js";
 const hashParams = getHashParams();
 const access_token = hashParams.access_token;
 const expires_in = hashParams.expires_in;
-removeHashParams();
+const roomID = getHashID();
+if (roomID) {
+  // Go to room
+  localStorage.setItem("roomID", roomID);
+  window.history.pushState(
+    "room/" + roomID,
+    document.title,
+    window.location.pathname + window.location.search
+  );
+} else if (window.location.hash.startsWith("#access_token=")) {
+  removeHashParams();
+}
 
 export default function Home() {
   const { Title, Text } = Typography;

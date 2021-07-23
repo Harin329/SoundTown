@@ -8,6 +8,7 @@ import {
   isRoomPaused,
   selectNowPlaying,
   selectNowRequest,
+  selectRoomID,
   selectRoomListeners,
   setNowPlaying,
   setNowRequest,
@@ -20,6 +21,7 @@ import { selectUID } from "../../reducer/authReducer";
 import { GET_REQUEST_BY_ID } from "../../query/request";
 import { playNextFunc, soloUserFunc } from "../../types";
 import { timeouts } from "../../pages/room";
+import { getAuthorizeHref } from "../../oauthConfig";
 
 export default function NowPlaying(
   spotifyClient: SpotifyWebApi.SpotifyWebApiJs,
@@ -34,6 +36,7 @@ export default function NowPlaying(
   const nowRequest = useSelector(selectNowRequest);
   const listeners = useSelector(selectRoomListeners);
   const userID = useSelector(selectUID);
+  const roomID = useSelector(selectRoomID);
 
   const { data: currentUser } = useQuery(GET_USER, {
     variables: {
@@ -72,6 +75,11 @@ export default function NowPlaying(
                             playNext(false, 500);
                           }, songObj?.duration_ms! - res.progress_ms! - 2000);
                           timeouts.push(time);
+                        }).catch((err: SpotifyWebApi.ErrorObject) => {
+                          console.log(err.response);
+                          if (err.status === 401) {
+                            window.open(getAuthorizeHref(), "_self");
+                          }
                         });
                       } else {
                         console.log("not current song");
@@ -86,14 +94,20 @@ export default function NowPlaying(
                 console.log("current room null");
               }
             })
-            .catch((err) => {
-              console.log(err);
+            .catch((err: SpotifyWebApi.ErrorObject) => {
+              console.log(err.response);
+              if (err.status === 401) {
+                window.open(getAuthorizeHref(), "_self");
+              }
             });
         })
-        .catch(() => {
-          message.info(
-            "Please start playing music on a spotify connected device first!"
-          );
+        .catch((err: SpotifyWebApi.ErrorObject) => {
+          console.log(err.response);
+          if (err.status === 401) {
+            window.open(getAuthorizeHref(), "_self");
+          } else {
+            message.info("Please start playing music on a spotify connected device first!");
+          }
         });
     } else {
       spotifyClient
@@ -104,10 +118,13 @@ export default function NowPlaying(
             clearTimeout(time);
           });
         })
-        .catch(() => {
-          message.info(
-            "Please start playing music on a spotify connected device first!"
-          );
+        .catch((err: SpotifyWebApi.ErrorObject) => {
+          console.log(err.response);
+          if (err.status === 401) {
+            window.open(getAuthorizeHref(), "_self");
+          } else {
+            message.info("Please start playing music on a spotify connected device first!");
+          }
         });
     }
   };
@@ -122,7 +139,7 @@ export default function NowPlaying(
 
   return (
     <Col span={10}>
-      {nowPlaying !== undefined && nowRequest !== undefined && (
+      {nowPlaying !== undefined && nowRequest !== undefined && nowRequest.room_id?._id === roomID && (
         <Col className="App-now-playing">
           <Row style={{ flex: 1, paddingBottom: 10 }}>
             <Title level={5} style={{ color: "white" }}>
@@ -230,7 +247,7 @@ export default function NowPlaying(
           </Row>
         </Col>
       )}
-      {(nowPlaying === undefined || nowRequest === undefined) && (
+      {(nowPlaying === undefined || nowRequest === undefined || nowRequest.room_id?._id !== roomID) && (
         <Col className="App-now-playing">
           <Row style={{ flex: 1, paddingBottom: 10 }}>
             <Title level={5} style={{ color: "white" }}>
