@@ -142,7 +142,7 @@ export default function Queue() {
   return (
     <Row className="App-footer">
       <Title level={5} style={{ color: "white" }}>
-        Next Up
+        {(queue === undefined || queue.requests.length === 0) ? "No songs queued, following room creator's now playing" : "Next Up"}
       </Title>
       <Col
         style={{

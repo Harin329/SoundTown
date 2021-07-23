@@ -313,7 +313,7 @@ export default function Room() {
                   creator_name: displayName,
                   creator_uri: user_image,
                   image_uri: currentSong?.album.images[0].url,
-                  message: "",
+                  message: displayName + "'s currently playing song",
                   room_id: {
                     link: roomObj._id,
                   },
