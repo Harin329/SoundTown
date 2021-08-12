@@ -1,9 +1,10 @@
-import { Row, Col, Image, Typography, message } from "antd";
+import { Row, Col, Image, Typography, message, Button } from "antd";
 import { useDispatch, useSelector } from "react-redux";
 import SpotifyWebApi from "spotify-web-api-js";
 import play from "../../images/play.png";
 import pause from "../../images/pause.png";
 import skip from "../../images/skip.png";
+import spotify from "../../images/spotify.png";
 import {
   isRoomPaused,
   selectNowPlaying,
@@ -26,7 +27,7 @@ import { getAuthorizeHref } from "../../oauthConfig";
 export default function NowPlaying(
   spotifyClient: SpotifyWebApi.SpotifyWebApiJs,
   playNext: playNextFunc,
-  soloUser: soloUserFunc,
+  soloUser: soloUserFunc
 ) {
   const { Title, Text } = Typography;
   const dispatch = useDispatch();
@@ -67,20 +68,23 @@ export default function NowPlaying(
                     .then((reqRes) => {
                       const song = reqRes.data.request.song.split(":")[2];
                       if (song === currentSong) {
-                        spotifyClient.getTrack(song).then((songObj) => {
-                          dispatch(setPaused(false));
-                          dispatch(setNowPlaying(songObj));
-                          dispatch(setNowRequest(reqRes.data.request));
-                          const time = setTimeout(() => {
-                            playNext(false, 500);
-                          }, songObj?.duration_ms! - res.progress_ms! - 2000);
-                          timeouts.push(time);
-                        }).catch((err: SpotifyWebApi.ErrorObject) => {
-                          console.log(err.response);
-                          if (err.status === 401) {
-                            window.open(getAuthorizeHref(), "_self");
-                          }
-                        });
+                        spotifyClient
+                          .getTrack(song)
+                          .then((songObj) => {
+                            dispatch(setPaused(false));
+                            dispatch(setNowPlaying(songObj));
+                            dispatch(setNowRequest(reqRes.data.request));
+                            const time = setTimeout(() => {
+                              playNext(false, 500);
+                            }, songObj?.duration_ms! - res.progress_ms! - 2000);
+                            timeouts.push(time);
+                          })
+                          .catch((err: SpotifyWebApi.ErrorObject) => {
+                            console.log(err.response);
+                            if (err.status === 401) {
+                              window.open(getAuthorizeHref(), "_self");
+                            }
+                          });
                       } else {
                         console.log("not current song");
                         soloUser();
@@ -106,7 +110,9 @@ export default function NowPlaying(
           if (err.status === 401) {
             window.open(getAuthorizeHref(), "_self");
           } else {
-            message.info("Please start playing music on a spotify connected device first!");
+            message.info(
+              "Please start playing music on a spotify connected device first!"
+            );
           }
         });
     } else {
@@ -123,7 +129,9 @@ export default function NowPlaying(
           if (err.status === 401) {
             window.open(getAuthorizeHref(), "_self");
           } else {
-            message.info("Please start playing music on a spotify connected device first!");
+            message.info(
+              "Please start playing music on a spotify connected device first!"
+            );
           }
         });
     }
@@ -135,119 +143,148 @@ export default function NowPlaying(
       clearTimeout(time);
     });
     // Need to do something so everyone skips
-  }
+  };
 
   return (
     <Col span={10}>
-      {nowPlaying !== undefined && nowRequest !== undefined && nowRequest.room_id?._id === roomID && (
-        <Col className="App-now-playing">
-          <Row style={{ flex: 1, paddingBottom: 10 }}>
-            <Title level={5} style={{ color: "white" }}>
-              Now Playing
-            </Title>
-          </Row>
-          <Row style={{ flex: 4 }}>
-            <Image
-              src={nowPlaying.album.images[0].url}
-              className="now-playing-image"
-              alt={nowPlaying.name}
-              preview={false}
-            />
-            <Col style={{ flex: 1.5, paddingLeft: 50 }}>
-              <Row style={{ alignItems: "center" }}>
-                <Image
-                  src={nowRequest.creator_uri}
-                  className="profile-image"
-                  alt={nowRequest.creator_name}
-                  preview={false}
-                />
+      {nowPlaying !== undefined &&
+        nowRequest !== undefined &&
+        nowRequest.room_id?._id === roomID && (
+          <Col className="App-now-playing">
+            <Row style={{ flex: 1, paddingBottom: 10 }}>
+              <Title level={5} style={{ color: "white" }}>
+                Now Playing
+              </Title>
+            </Row>
+            <Row style={{ flex: 4 }}>
+              <Image
+                src={nowPlaying.album.images[0].url}
+                className="now-playing-image"
+                alt={nowPlaying.name}
+                preview={false}
+              />
+              <Col style={{ flex: 1.5, paddingLeft: 50 }}>
+                <Row style={{ alignItems: "center" }}>
+                  <Image
+                    src={nowRequest.creator_uri}
+                    className="profile-image"
+                    alt={nowRequest.creator_name}
+                    preview={false}
+                  />
+                  <Title
+                    level={5}
+                    style={{
+                      color: "white",
+                      marginTop: 10,
+                    }}
+                  >
+                    {nowRequest.creator_name}
+                  </Title>
+                </Row>
+                <Text
+                  className="song-message"
+                  style={{ color: "white", fontSize: 20 }}
+                >
+                  {nowRequest.message}
+                </Text>
+              </Col>
+            </Row>
+            <Row style={{ flex: 1 }}>
+              <Col
+                style={{
+                  flex: 1,
+                  alignItems: "start",
+                  justifyContent: "start",
+                }}
+              >
+                <Title
+                  className="resultName"
+                  level={3}
+                  style={{
+                    color: "white",
+                    textAlign: "start",
+                    marginTop: 20,
+                  }}
+                >
+                  {nowPlaying.name}
+                </Title>
                 <Title
                   level={5}
                   style={{
                     color: "white",
-                    marginTop: 10,
+                    textAlign: "start",
+                    marginTop: -10,
                   }}
                 >
-                  {nowRequest.creator_name}
+                  {nowPlaying.artists[0].name}
                 </Title>
-              </Row>
-              <Text
-                className="song-message"
-                style={{ color: "white", fontSize: 20 }}
-              >
-                {nowRequest.message}
-              </Text>
-            </Col>
-          </Row>
-          <Row style={{ flex: 1 }}>
-            <Col
-              style={{
-                flex: 1,
-                alignItems: "start",
-                justifyContent: "start",
-              }}
-            >
-              <Title
-                className="resultName"
-                level={3}
+              </Col>
+              <Col
                 style={{
-                  color: "white",
-                  textAlign: "start",
-                  marginTop: 20,
+                  flex: 2,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                 }}
               >
-                {nowPlaying.name}
-              </Title>
-              <Title
-                level={5}
-                style={{
-                  color: "white",
-                  textAlign: "start",
-                  marginTop: -10,
-                }}
-              >
-                {nowPlaying.artists[0].name}
-              </Title>
-            </Col>
-            <Col
-              style={{
-                flex: 2,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Row justify="space-between">
-              <Image
-                src={paused ? play : pause}
-                style={{
-                  width: paused ? 30 : 40,
-                  height: paused ? 30 : 40,
-                }}
-                className="image-button"
-                alt={paused ? "play" : "pause"}
-                preview={false}
-                onClick={togglePause}
-                hidden={true}
-              />
-              <Image
-                src={skip}
-                style={{
-                  width: 40,
-                  height: 40,
-                }}
-                className="image-button"
-                alt={"skip"}
-                preview={false}
-                onClick={skipSong}
-                hidden={true}
-              />
-              </Row>
-            </Col>
-          </Row>
-        </Col>
-      )}
-      {(nowPlaying === undefined || nowRequest === undefined || nowRequest.room_id?._id !== roomID) && (
+                <Row justify="space-between">
+                  <Button
+                    type="primary"
+                    shape="round"
+                    size="large"
+                    className="button"
+                    style={{display: 'flex', justifyContent: 'center', alignItems: 'center'}}
+                    icon={
+                      <Image
+                        src={spotify}
+                        style={{
+                          width: 20,
+                          height: 20,
+                          marginRight: 10,
+                        }}
+                        className="image-button"
+                        alt={"icon"}
+                        preview={false}
+                      />
+                    }
+                    onClick={() => {
+                      window.open(nowPlaying.external_urls.spotify)
+                    }}
+                  >
+                    OPEN SPOTIFY
+                  </Button>
+                  <Image
+                    src={paused ? play : pause}
+                    style={{
+                      width: paused ? 30 : 40,
+                      height: paused ? 30 : 40,
+                    }}
+                    className="image-button"
+                    alt={paused ? "play" : "pause"}
+                    preview={false}
+                    onClick={togglePause}
+                    hidden={true}
+                  />
+                  <Image
+                    src={skip}
+                    style={{
+                      width: 40,
+                      height: 40,
+                    }}
+                    className="image-button"
+                    alt={"skip"}
+                    preview={false}
+                    onClick={skipSong}
+                    hidden={true}
+                  />
+                </Row>
+              </Col>
+            </Row>
+          </Col>
+        )}
+      {(nowPlaying === undefined ||
+        nowRequest === undefined ||
+        nowRequest.room_id?._id !== roomID) && (
         <Col className="App-now-playing">
           <Row style={{ flex: 1, paddingBottom: 10 }}>
             <Title level={5} style={{ color: "white" }}>

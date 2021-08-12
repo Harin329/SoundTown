@@ -6,14 +6,7 @@ const scope = [
   "user-read-playback-state",
   "user-modify-playback-state",
   "user-read-currently-playing",
-  "ugc-image-upload",
-  "user-read-recently-played",
-  "user-top-read",
   "user-read-playback-position",
-  "playlist-modify-public",
-  "playlist-modify-private",
-  "playlist-read-private",
-  "playlist-read-collaborative",
 ];
 
 export const getAuthorizeHref = (): string => {
