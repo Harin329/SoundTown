@@ -23,6 +23,7 @@ import create from "../../images/create.png";
 import join from "../../images/join.png";
 import { setRoomID } from "../../reducer/roomReducer";
 import SpotifyWebApi from "spotify-web-api-js";
+import Coffee from "../../components/coffee";
 
 const hashParams = getHashParams();
 const access_token = hashParams.access_token;
@@ -144,6 +145,8 @@ export default function Home() {
           </Space>
         )}
       </Row>
+      <Space size={"middle"}> </Space>
+        {Coffee()}
     </Space>
   );
 }
