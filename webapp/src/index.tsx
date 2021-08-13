@@ -1,6 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom";
 import { Provider } from "react-redux";
+import { BrowserView, MobileView } from "react-device-detect";
 import "dotenv/config";
 import { ApolloProvider } from "@apollo/client";
 import { store } from "./store/index";
@@ -8,13 +9,21 @@ import "./index.css";
 import App from "./App";
 import reportWebVitals from "./reportWebVitals";
 import { client } from "./apollo/apollo";
-import './fonts/Gotham-Book.otf';
+import "./fonts/Gotham-Book.otf";
 
 ReactDOM.render(
   <React.StrictMode>
     <ApolloProvider client={client}>
       <Provider store={store}>
-        <App />
+        <BrowserView>
+          <App />
+        </BrowserView>
+        <MobileView>
+          <h3 style={{ color: "white", margin: 20, textAlign: "center" }}>
+            This app does not support mobile view yet, please visit on a
+            desktop!
+          </h3>
+        </MobileView>
       </Provider>
     </ApolloProvider>
   </React.StrictMode>,
