@@ -125,22 +125,23 @@ export default function Home() {
         {isLoggedIn && (
           <Space size={"middle"}>
             <Button
-              className="button action-button"
+              className="button home-action-button"
               type="primary"
               shape="round"
-              icon={<Image src={create} width={40} preview={false} />}
+              icon={<Image src={create} width={50} preview={false} />}
               onClick={createRoom}
             >
-              Create a Room
+              Create
             </Button>
+            <Space style={{width: 50}}> </Space>
             <Button
-              className="button action-button"
+              className="button home-action-button"
               type="primary"
               shape="round"
-              icon={<Image src={join} width={50} preview={false} />}
+              icon={<Image src={join} width={60} preview={false} />}
               onClick={() => browseRoom()}
             >
-              Join a Room
+              Join
             </Button>
           </Space>
         )}

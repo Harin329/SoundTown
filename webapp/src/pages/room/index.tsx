@@ -567,6 +567,7 @@ export default function Room() {
             src={back}
             alt="back"
             preview={false}
+            style={{marginRight: 10}}
             onClick={() => {
               localStorage.clear();
               history.push("/");

@@ -99,12 +99,3 @@
   padding-left: 2%;
   padding-right: 2%;
 }
-
-.App-now-playing {
-  height: 50vh;
-  border-radius: 10px;
-  padding: 30px;
-  font-size: calc(10px + 2vmin);
-  background-color: #025034;
-  color: white;
-}

@@ -46,6 +46,7 @@ export default function CreateRoom() {
         className="input"
         placeholder="Enter Party Name"
         onChange={editName}
+        style={{border: 0}}
       />
       <Button
         className="button create-button"

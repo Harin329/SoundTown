@@ -151,12 +151,12 @@ export default function NowPlaying(
         nowRequest !== undefined &&
         nowRequest.room_id?._id === roomID && (
           <Col className="App-now-playing">
-            <Row style={{ flex: 1, paddingBottom: 10 }}>
+            <Row style={{ flex: 1 }}>
               <Title level={5} style={{ color: "white" }}>
                 Now Playing
               </Title>
             </Row>
-            <Row style={{ flex: 4 }}>
+            <Row style={{ flex: 5 }}>
               <Image
                 src={nowPlaying.album.images[0].url}
                 className="now-playing-image"
@@ -189,7 +189,7 @@ export default function NowPlaying(
                 </Text>
               </Col>
             </Row>
-            <Row style={{ flex: 1 }}>
+            <Row style={{ flex: 3 }}>
               <Col
                 style={{
                   flex: 1,
@@ -223,8 +223,8 @@ export default function NowPlaying(
                 style={{
                   flex: 2,
                   display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
+                  alignItems: "flex-end",
+                  justifyContent: "flex-end",
                 }}
               >
                 <Row justify="space-between">
@@ -233,7 +233,7 @@ export default function NowPlaying(
                     shape="round"
                     size="large"
                     className="button"
-                    style={{display: 'flex', justifyContent: 'center', alignItems: 'center'}}
+                    style={{display: 'flex', justifyContent: 'center', alignItems: 'center', boxShadow: "none"}}
                     icon={
                       <Image
                         src={spotify}

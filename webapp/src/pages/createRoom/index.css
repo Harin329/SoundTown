@@ -11,13 +11,13 @@
 }
 
 .button {
-  background-color: #1DB954;
-  border-color: white;
+  background-color: #47AA4B;
+  border-color: transparent;
 }
 
 .button:hover {
   background-color: #025034;
-  border-color: white;
+  border-color: transparent;
 }
 
 .create-button {
@@ -29,7 +29,7 @@
 .input {
   width: 80vh;
   height: 10vh;
-  border-radius: 20px;
-  border-color: white;
-  font-size: large;
+  border-radius: 50px;
+  text-align: center;
+  font-size: 30px;
 }

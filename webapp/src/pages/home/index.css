@@ -12,13 +12,13 @@
 }
 
 .button {
-  background-color: #1DB954;
-  border-color: white;
+  background-color: #47AA4B;
+  border-color: transparent;
 }
 
-.action-button {
-  width: 20vh;
-  height: 20vh;
+.home-action-button {
+  width: 16vh;
+  height: 16vh;
   margin-top: 5vh;
   display: flex;
   flex-direction: column;
@@ -29,5 +29,5 @@
 
 .button:hover {
   background-color: #025034;
-  border-color: white;
+  border-color: transparent;
 }
