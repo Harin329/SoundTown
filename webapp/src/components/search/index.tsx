@@ -289,7 +289,7 @@ export default function Search(
             onChange={(text) => {
               setQuery(text.target.value);
             }}
-            style={{ marginBottom: 20, width: "95%", borderRadius: 10 }}
+            style={{ marginBottom: 20, width: "95%", borderRadius: 10, border: 0 }}
           />
           {searchResult?.slice(0, 7).map((res) => {
             return (
