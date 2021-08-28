@@ -1,12 +1,15 @@
 @import '~antd/dist/antd.css';
 
-.App {
+.App-home {
   display: flex;
   flex-direction: column;
   text-align: center;
   align-items: center;
   justify-content: center;
+  align-self: center;
   background-color: #0A3E03;
+  padding-left: 20%;
+  padding-right: 20%;
   height: 100vh;
   width: 100vw;
 }

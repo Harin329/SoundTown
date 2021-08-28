@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { Typography, Row, Button, Image, Space, message } from "antd";
+import { Typography, Row, Col, Button, Image, Space, message } from "antd";
 import { useHistory } from "react-router-dom";
 import "./index.css";
 import {
@@ -103,13 +103,37 @@ export default function Home() {
   };
 
   return (
-    <Space className="App" size={"large"}>
+    <Space className="App-home" size={"large"}>
       <Image src={logo} width={200} preview={false} />
-      <Title style={{ color: "white" }}>Welcome to SoundTown!</Title>
-      <Text style={{ color: "white", fontSize: 18 }}>
-        Create and join music party rooms to listen to music with friends and
-        discover new songs!
-      </Text>
+      <Title style={{ color: "white" }}>Welcome to SoundTown.</Title>
+      <Row justify="space-between">
+        <Col span={6}>
+          <Row justify="center">
+            <Text style={{ color: "white", fontSize: 18, fontWeight: 'bold' }}>Spotify Rooms</Text>
+            <Text style={{ color: "white", fontSize: 14 }}>
+              Create and join music rooms on SoundTown to listen with anyone. All you need is a unique link to join.
+            </Text>
+          </Row>
+        </Col>
+        <Col span={6}>
+          <Row justify="center">
+            <Text style={{ color: "white", fontSize: 18, fontWeight: 'bold' }}>Queue Requests</Text>
+            <Text style={{ color: "white", fontSize: 14 }}>
+              Host your own radio station, where others can send song
+              requests along with personalized messages.
+            </Text>
+          </Row>
+        </Col>
+        <Col span={6}>
+          <Row justify="center">
+            <Text style={{ color: "white", fontSize: 18, fontWeight: 'bold' }}>Sync Songs</Text>
+            <Text style={{ color: "white", fontSize: 14 }}>
+              No requests queued? Let your inner DJ shine as music syncs with the host's now playing.
+            </Text>
+          </Row>
+        </Col>
+      </Row>
+      <Space size={"small"}> </Space>
       <Row>
         {!isLoggedIn && (
           <Button
@@ -133,7 +157,7 @@ export default function Home() {
             >
               Create
             </Button>
-            <Space style={{width: 50}}> </Space>
+            <Space style={{ width: 50 }}> </Space>
             <Button
               className="button home-action-button"
               type="primary"
@@ -147,7 +171,7 @@ export default function Home() {
         )}
       </Row>
       <Space size={"middle"}> </Space>
-        {Coffee()}
+      {Coffee()}
     </Space>
   );
 }
