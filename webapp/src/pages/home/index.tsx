@@ -133,7 +133,6 @@ export default function Home() {
           </Row>
         </Col>
       </Row>
-      <Space size={"small"}> </Space>
       <Row>
         {!isLoggedIn && (
           <Button
